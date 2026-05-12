@@ -53,14 +53,14 @@ New to business/finance terminology? Here's what the metrics in the leaderboard 
 | **FCF** | Free Cash Flow | The net cash generated (or burned) during the episode. Starting cash was ₹20 Cr; if final cash is ₹41 Cr, FCF = +₹21 Cr. |
 | **NPS** | Net Promoter Score | A customer satisfaction metric ranging from -100 to +100. Measures how likely customers are to recommend the store. Baseline is 35; below 25 is poor. |
 | **Stockout%** | Stockout Rate | Percentage of customer demand that couldn't be fulfilled because inventory was empty. Target is <5%; above 8% means significant lost sales. |
-| **COGS** | Cost of Goods Sold | The direct cost of purchasing the products that were sold (e.g., buying atta from suppliers to sell in stores). |
+| **COGS** | Cost of Goods Sold | The direct cost of purchasing the products that were sold (e.g., buying wheat flour from suppliers to sell in stores). |
 | **OPEX** | Operating Expenses | Day-to-day running costs: staff salaries, rent, utilities, logistics — everything except the cost of goods themselves. |
 | **P&L** | Profit and Loss Statement | A financial summary showing revenue, costs, and whether the company made or lost money. |
 | **SLA** | Service Level Agreement | Here, the percentage of deliveries completed on time. Baseline is 90%. |
 | **KPI** | Key Performance Indicator | A measurable metric used to track business health (revenue, margins, stockouts, NPS, etc.). |
 | **PO** | Purchase Order | A formal order placed with suppliers to buy inventory. The CEO can modify PO quantities to balance cash vs. stockout risk. |
 | **Cr** | Crore | Indian numbering unit = 10 million. ₹20 Cr = ₹200,000,000 (~$2.4M USD). |
-| **SKU** | Stock Keeping Unit | A distinct product in inventory. The simulation has 8 SKUs (atta, rice, oil, soap, detergent, milk, bread, batteries). |
+| **SKU** | Stock Keeping Unit | A distinct product in inventory. The simulation has 8 SKUs (wheat flour, rice, oil, soap, detergent, milk, bread, batteries). |
 | **Capex** | Capital Expenditure | Large one-time investments (new stores, equipment, technology) as opposed to ongoing operating expenses. |
 | **Line of Credit** | — | A pre-approved borrowing facility from a bank. The company can draw cash when needed and repay later — acts as emergency liquidity. |
 | **Cash Runway** | — | How many weeks the company can survive at its current cash burn rate before running out of money. |
@@ -200,7 +200,7 @@ retailceo-bench/
 
 ### Must Have
 
-- [ ] **Test suite** — deterministic seed replay, reward bounds, KPI delta correctness, crisis activation/expiry, cash floor penalty, proposal execution for each action type
+- [x] **Test suite** — deterministic seed replay, reward bounds, KPI delta correctness, crisis activation/expiry, cash floor penalty, proposal execution for each action type (121 tests)
 - [ ] **Deterministic reproducibility guarantee** — verify `reset(seed=42)` + 12 identical actions = identical total reward across platforms (Linux/macOS, Python 3.10–3.12)
 - [x] **LICENSE file** — MIT
 - [x] **`.gitignore`** — Python defaults + egg-info + trace JSON artifacts
@@ -244,7 +244,7 @@ retailceo-bench/
 - **Company:** Tier-2 Indian retail chain (100 stores across 8 cities)
 - **Starting cash:** ₹20 Crore (~$2.4M)
 - **Weekly revenue baseline:** ₹5 Crore (~$600K)
-- **SKU catalogue:** 8 categories (atta, rice, oil, soap, detergent, milk, bread, batteries)
+- **SKU catalogue:** 8 categories (wheat flour, rice, oil, soap, detergent, milk, bread, batteries)
 - **Category margins:** grocery staple 5%, FMCG 15%, fresh 20%, household 12%
 
 ### Crisis Events

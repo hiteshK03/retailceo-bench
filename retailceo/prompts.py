@@ -108,7 +108,7 @@ VERDICTS: approve | reject | modify | request_info.
 
 OUTPUT FORMAT example:
 <thinking>
-S01-01 routine atta restock, qty in-line, approve.
+S01-01 routine wheat flour restock, qty in-line, approve.
 G01-04 discount 30% on staples, hurts margin, reject.
 Stockout 4% trailing -> over-weight supply_chain this week.
 </thinking>

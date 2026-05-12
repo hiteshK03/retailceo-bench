@@ -61,7 +61,7 @@ def _build_c1(day: int, rng: random.Random, cities: List[str]) -> CrisisEvent:
             "nps_bump": +1.0,
         },
         description=(
-            "Diwali week is here. Tier-2 families are buying across atta, sweets, "
+            "Diwali week is here. Tier-2 families are buying across wheat flour, sweets, "
             "soaps, lights -- footfall climbs into the salary window."
         ),
     )

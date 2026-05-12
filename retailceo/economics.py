@@ -149,7 +149,7 @@ def _margin_pct(price: float, cost: float) -> float:
 
 
 SKU_CATALOGUE: Dict[str, Dict] = {
-    "atta-5kg":          {"name": "Aashirvaad Atta 5kg",  "category": "grocery_staple", "price_inr": 235, "cost_inr": 223, "unit": "bag"},
+    "wheat-flour-5kg":   {"name": "Whole Wheat Flour 5kg","category": "grocery_staple", "price_inr": 235, "cost_inr": 223, "unit": "bag"},
     "rice-basmati-1kg":  {"name": "Basmati Rice 1kg",     "category": "grocery_staple", "price_inr": 140, "cost_inr": 133, "unit": "kg"},
     "oil-sunflower-1l":  {"name": "Sunflower Oil 1L",     "category": "grocery_staple", "price_inr": 155, "cost_inr": 147, "unit": "bottle"},
     "soap-lifebuoy":     {"name": "Lifebuoy Soap 125g",   "category": "fmcg",           "price_inr":  40, "cost_inr":  34, "unit": "bar"},

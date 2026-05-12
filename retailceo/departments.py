@@ -811,7 +811,7 @@ _STRATEGIC_OPPORTUNITIES = [
     {
         "name": "Bulk procurement at distress pricing",
         "description": (
-            "A competitor's warehouse liquidation offers staple inventory (atta, rice, oil) "
+            "A competitor's warehouse liquidation offers staple inventory (wheat flour, rice, oil) "
             "at 25-30% below wholesale. Limited quantity — first-come-first-served. "
             "Would lock in 6-8 weeks of staple supply at exceptional margins."
         ),

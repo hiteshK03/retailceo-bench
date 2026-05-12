@@ -200,7 +200,7 @@ def supplier_daily_reliability(
 # ---------------------------------------------------------------------------
 
 COMPLAINT_ISSUE_POOL: List[str] = [
-    "atta delivery delayed 3 days",
+    "wheat flour delivery delayed 3 days",
     "POS app crashed during salary-day rush",
     "discount code settlement stuck",
     "expired stock sent in last delivery",
