@@ -205,7 +205,7 @@ retailceo-bench/
 - [x] **LICENSE file** — MIT
 - [x] **`.gitignore`** — Python defaults + egg-info + trace JSON artifacts
 - [x] **Git repository init** — `git init`, initial commit, GitHub remote
-- [ ] **CI/CD** — GitHub Actions: lint (ruff), type-check (mypy/pyright), test (pytest), pip install smoke test
+- [x] **CI/CD** — GitHub Actions: pytest across Python 3.10–3.12 on push/PR
 - [ ] **Leaderboard with more models** — GPT-4o, GPT-4.1, Gemini 2.5 Pro, Llama 4, open-weight models
 - [ ] **Standardized evaluation protocol** — document exact seed set (e.g., 42–51), difficulty, weeks, and number of runs required for official leaderboard submission
 - [ ] **Human baseline** — have 3-5 humans play the benchmark to establish human-level performance
