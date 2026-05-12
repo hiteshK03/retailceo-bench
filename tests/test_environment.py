@@ -2,6 +2,8 @@
 
 import random
 
+import pytest
+
 from retailceo.environment import RetailCEOEnv
 from retailceo.models import BenchmarkConfig, CEOAction, ProposalDecision
 
@@ -55,12 +57,15 @@ class TestDeterministicReplay:
 
 
 class TestCrossPlatformReproducibility:
-    """Hardcoded reference values from seed=42, medium, 12-week approve-all.
+    """Hardcoded reference values from seed=42, medium, 12-week episodes.
 
-    These exact numbers must match on every Python 3.10–3.12 and on both
-    Linux and macOS.  If a code change shifts simulation output, update these
-    values deliberately — accidental drift means a reproducibility bug.
+    Uses rel=1e-9 tolerance to accommodate x86 vs ARM64 FP rounding
+    (last 1-2 ULPs).  Still far tighter than anything that matters for
+    benchmark scoring.  If a code change shifts values beyond this
+    tolerance, update deliberately — it means simulation logic changed.
     """
+
+    REL_TOL = 1e-9
 
     REFERENCE_REWARDS_APPROVE_ALL = [
         0.18926261625420204,
@@ -108,34 +113,30 @@ class TestCrossPlatformReproducibility:
                 rewards.append(obs.reward)
         return rewards, env.state.company.cash_inr, env.state.company.pnl_qtd.ebitda_margin_pct
 
-    def test_approve_all_rewards_exact(self):
-        rewards, cash, margin = self._run_episode(_approve_all)
-        assert rewards == self.REFERENCE_REWARDS_APPROVE_ALL, (
-            f"Reward sequence mismatch (approve-all, seed=42, medium, 12wk)"
-        )
-
-    def test_approve_all_total_reward_exact(self):
+    def test_approve_all_rewards(self):
         rewards, _, _ = self._run_episode(_approve_all)
-        assert sum(rewards) == self.REFERENCE_TOTAL_REWARD_APPROVE_ALL
+        assert rewards == pytest.approx(self.REFERENCE_REWARDS_APPROVE_ALL, rel=self.REL_TOL)
 
-    def test_approve_all_final_cash_exact(self):
+    def test_approve_all_total_reward(self):
+        rewards, _, _ = self._run_episode(_approve_all)
+        assert sum(rewards) == pytest.approx(self.REFERENCE_TOTAL_REWARD_APPROVE_ALL, rel=self.REL_TOL)
+
+    def test_approve_all_final_cash(self):
         _, cash, _ = self._run_episode(_approve_all)
-        assert cash == self.REFERENCE_FINAL_CASH_APPROVE_ALL
+        assert cash == pytest.approx(self.REFERENCE_FINAL_CASH_APPROVE_ALL, rel=self.REL_TOL)
 
-    def test_approve_all_ebitda_margin_exact(self):
+    def test_approve_all_ebitda_margin(self):
         _, _, margin = self._run_episode(_approve_all)
-        assert margin == self.REFERENCE_EBITDA_MARGIN_APPROVE_ALL
+        assert margin == pytest.approx(self.REFERENCE_EBITDA_MARGIN_APPROVE_ALL, rel=self.REL_TOL)
 
-    def test_reject_all_rewards_exact(self):
+    def test_reject_all_rewards(self):
         rewards, cash, _ = self._run_episode(_reject_all)
-        assert rewards == self.REFERENCE_REWARDS_REJECT_ALL, (
-            f"Reward sequence mismatch (reject-all, seed=42, medium, 12wk)"
-        )
-        assert cash == self.REFERENCE_FINAL_CASH_REJECT_ALL
+        assert rewards == pytest.approx(self.REFERENCE_REWARDS_REJECT_ALL, rel=self.REL_TOL)
+        assert cash == pytest.approx(self.REFERENCE_FINAL_CASH_REJECT_ALL, rel=self.REL_TOL)
 
-    def test_reject_all_total_reward_exact(self):
+    def test_reject_all_total_reward(self):
         rewards, _, _ = self._run_episode(_reject_all)
-        assert sum(rewards) == self.REFERENCE_TOTAL_REWARD_REJECT_ALL
+        assert sum(rewards) == pytest.approx(self.REFERENCE_TOTAL_REWARD_REJECT_ALL, rel=self.REL_TOL)
 
 
 class TestStepCount:
