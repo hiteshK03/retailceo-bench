@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Test / coverage
+.pytest_cache/
+htmlcov/
+.coverage
+
+# Trace artifacts (keep in results/ if canonical)
+*.json
+!pyproject.toml
+
+# OS
+.DS_Store
+Thumbs.db
+run_smoke.py

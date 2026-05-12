@@ -1,0 +1,307 @@
+"""CLI entry point for RetailCEO-Bench evaluation.
+
+Usage:
+    python -m eval.cli baselines --seeds 42 43 44 --difficulty medium --weeks 12
+    python -m eval.cli frontier --model claude-sonnet-4-6 --seeds 42 43
+    python -m eval.cli trace --policy heuristic --seed 42 --out trace.json
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from typing import Dict, List
+
+from retailceo.models import BenchmarkConfig
+from .policies import (
+    CEOPolicy,
+    RandomCEO,
+    AllApproveCEO,
+    HeuristicCEO,
+    OracleCEO,
+)
+from .runner import EpisodeResult, run_one_episode, run_policy, summarise
+
+
+def _parse_extra_headers() -> Dict[str, str]:
+    raw = os.environ.get("ANTHROPIC_CUSTOM_HEADERS", "")
+    if not raw:
+        return {}
+    headers: Dict[str, str] = {}
+    for pair in raw.split(","):
+        pair = pair.strip()
+        if ":" in pair:
+            k, v = pair.split(":", 1)
+            headers[k.strip()] = v.strip()
+    return headers
+
+
+def _make_config(args) -> BenchmarkConfig:
+    years = getattr(args, "years", 0) or 0
+    return BenchmarkConfig(
+        weeks_per_quarter=args.weeks,
+        horizon_years=years,
+        difficulty=args.difficulty,
+        crisis_prob=args.crisis_prob,
+        starting_cash_inr=args.starting_cash,
+    )
+
+
+def cmd_baselines(args) -> int:
+    config = _make_config(args)
+    seeds = args.seeds or list(range(1, 6))
+
+    all_policies = {
+        "random": RandomCEO(seed=0),
+        "all_approve": AllApproveCEO(),
+        "heuristic": HeuristicCEO(),
+        "oracle": OracleCEO(),
+    }
+    selected = args.policies or list(all_policies.keys())
+    policies: List[CEOPolicy] = [all_policies[p] for p in selected]
+
+    results_by_policy: Dict[str, List[EpisodeResult]] = {}
+    for p in policies:
+        results_by_policy[p.name] = run_policy(
+            p, seeds, config=config, verbose=args.verbose, quiet=args.quiet,
+        )
+
+    summarise(results_by_policy)
+
+    if args.out:
+        payload = {
+            name: [
+                {
+                    "seed": r.seed,
+                    "total_reward": r.total_reward,
+                    "ebitda_margin_pct": r.ebitda_margin_pct,
+                    "avg_stockout_pct": r.avg_stockout_pct,
+                    "avg_nps": r.avg_nps,
+                    "starting_cash_inr": r.starting_cash_inr,
+                    "final_cash_inr": r.final_cash_inr,
+                    "min_cash_inr": r.min_cash_inr,
+                    "free_cash_flow_inr": r.free_cash_flow_inr,
+                }
+                for r in res
+            ]
+            for name, res in results_by_policy.items()
+        }
+        with open(args.out, "w") as f:
+            json.dump(payload, f, indent=2)
+        print(f"\nResults saved to {args.out}")
+
+    return 0
+
+
+def cmd_frontier(args) -> int:
+    from .frontier import FrontierCEO
+
+    config = _make_config(args)
+    seeds = args.seeds or list(range(1, 4))
+
+    policy = FrontierCEO(
+        model=args.model,
+        provider=args.provider,
+        api_base=args.api_base,
+        extra_headers=_parse_extra_headers() or None,
+        temperature=args.temperature,
+        max_tokens=args.max_tokens,
+        dual_head=args.dual_head,
+        permissive=args.permissive,
+    )
+
+    results = run_policy(
+        policy, seeds, config=config, verbose=args.verbose, quiet=args.quiet,
+    )
+    summarise({policy.name: results})
+
+    if args.out:
+        payload = [
+            {
+                "seed": r.seed,
+                "total_reward": r.total_reward,
+                "ebitda_margin_pct": r.ebitda_margin_pct,
+                "avg_stockout_pct": r.avg_stockout_pct,
+                "avg_nps": r.avg_nps,
+                "starting_cash_inr": r.starting_cash_inr,
+                "final_cash_inr": r.final_cash_inr,
+                "min_cash_inr": r.min_cash_inr,
+                "free_cash_flow_inr": r.free_cash_flow_inr,
+            }
+            for r in results
+        ]
+        with open(args.out, "w") as f:
+            json.dump(payload, f, indent=2)
+        print(f"\nResults saved to {args.out}")
+
+    return 0
+
+
+def cmd_trace(args) -> int:
+    config = _make_config(args)
+    seed = args.seed or 42
+
+    policy_map = {
+        "random": lambda: RandomCEO(seed=0),
+        "all_approve": lambda: AllApproveCEO(),
+        "heuristic": lambda: HeuristicCEO(),
+        "oracle": lambda: OracleCEO(),
+    }
+
+    if args.policy == "frontier":
+        from .frontier import FrontierCEO
+        policy = FrontierCEO(
+            model=args.model,
+            provider=args.provider,
+            api_base=args.api_base,
+            extra_headers=_parse_extra_headers() or None,
+            temperature=args.temperature,
+        )
+    elif args.policy in policy_map:
+        policy = policy_map[args.policy]()
+    else:
+        print(f"Unknown policy: {args.policy}", file=sys.stderr)
+        return 2
+
+    print(f"[trace] {policy.name} seed={seed} → {args.out}")
+    res = run_one_episode(
+        policy, seed, config=config, collect_trace=True, verbose=args.verbose,
+    )
+
+    payload = {
+        "meta": {
+            "policy": res.policy,
+            "seed": res.seed,
+            "total_reward": res.total_reward,
+            "final_cash_inr": res.final_cash_inr,
+            "ebitda_qtd_inr": res.ebitda_qtd_inr,
+            "ebitda_margin_pct": res.ebitda_margin_pct,
+            "avg_stockout_pct": res.avg_stockout_pct,
+            "avg_nps": res.avg_nps,
+        },
+        "trace": res.trace,
+    }
+    out_path = args.out or "trace.json"
+    with open(out_path, "w") as f:
+        json.dump(payload, f, indent=2, default=str)
+    print(f"  wrote {len(res.trace)} weekly steps to {out_path}")
+    return 0
+
+
+def cmd_compare(args) -> int:
+    all_results: Dict[str, List[EpisodeResult]] = {}
+    for path in args.results:
+        with open(path) as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            for name, entries in data.items():
+                all_results.setdefault(name, []).extend(
+                    EpisodeResult(
+                        policy=name,
+                        seed=e["seed"],
+                        total_reward=e["total_reward"],
+                        weekly_rewards=[],
+                        starting_cash_inr=e.get("starting_cash_inr", 0),
+                        final_cash_inr=e.get("final_cash_inr", 0),
+                        revenue_qtd_inr=0,
+                        ebitda_qtd_inr=0,
+                        ebitda_margin_pct=e.get("ebitda_margin_pct", 0),
+                        min_cash_inr=e.get("min_cash_inr", 0),
+                        avg_stockout_pct=e.get("avg_stockout_pct", 0),
+                        avg_nps=e.get("avg_nps", 0),
+                    )
+                    for e in entries
+                )
+        elif isinstance(data, list):
+            name = path.replace(".json", "").split("/")[-1]
+            all_results[name] = [
+                EpisodeResult(
+                    policy=name,
+                    seed=e["seed"],
+                    total_reward=e["total_reward"],
+                    weekly_rewards=[],
+                    starting_cash_inr=e.get("starting_cash_inr", 0),
+                    final_cash_inr=e.get("final_cash_inr", 0),
+                    revenue_qtd_inr=0,
+                    ebitda_qtd_inr=0,
+                    ebitda_margin_pct=e.get("ebitda_margin_pct", 0),
+                    min_cash_inr=e.get("min_cash_inr", 0),
+                    avg_stockout_pct=e.get("avg_stockout_pct", 0),
+                    avg_nps=e.get("avg_nps", 0),
+                )
+                for e in data
+            ]
+
+    summarise(all_results)
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="RetailCEO-Bench evaluation CLI"
+    )
+    parser.add_argument("--weeks", type=int, default=12)
+    parser.add_argument("--years", type=int, default=0,
+                        help="Multi-year horizon (1/3/5). Overrides --weeks when set.")
+    parser.add_argument("--difficulty", default="medium", choices=["easy", "medium", "hard"])
+    parser.add_argument("--crisis-prob", type=float, default=0.85)
+    parser.add_argument("--starting-cash", type=float, default=2e8)
+    parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--quiet", action="store_true")
+
+    sub = parser.add_subparsers(dest="command")
+
+    # baselines
+    bp = sub.add_parser("baselines", help="Run baseline policies")
+    bp.add_argument("--seeds", type=int, nargs="+", default=None)
+    bp.add_argument("--policies", type=str, nargs="+", default=None,
+                     help="Which policies to run (default: all)",
+                     choices=["random", "all_approve", "heuristic", "oracle"])
+    bp.add_argument("--out", type=str, default=None)
+
+    # frontier
+    fp = sub.add_parser("frontier", help="Run frontier model")
+    fp.add_argument("--model", type=str, default=None)
+    fp.add_argument("--provider", default="auto", choices=["auto", "anthropic", "openai"])
+    fp.add_argument("--api-base", type=str, default=None)
+    fp.add_argument("--temperature", type=float, default=0.0)
+    fp.add_argument("--max-tokens", type=int, default=600)
+    fp.add_argument("--dual-head", action="store_true")
+    fp.add_argument("--permissive", action="store_true")
+    fp.add_argument("--seeds", type=int, nargs="+", default=None)
+    fp.add_argument("--out", type=str, default=None)
+
+    # trace
+    tp = sub.add_parser("trace", help="Single episode trace")
+    tp.add_argument("--policy", default="heuristic",
+                     choices=["random", "all_approve", "heuristic", "oracle", "frontier"])
+    tp.add_argument("--seed", type=int, default=None)
+    tp.add_argument("--out", type=str, default="trace.json")
+    tp.add_argument("--model", type=str, default=None)
+    tp.add_argument("--provider", default="auto")
+    tp.add_argument("--api-base", type=str, default=None)
+    tp.add_argument("--temperature", type=float, default=0.0)
+
+    # compare
+    cp = sub.add_parser("compare", help="Compare result files")
+    cp.add_argument("results", nargs="+", help="JSON result files to compare")
+
+    args = parser.parse_args()
+
+    if args.command == "baselines":
+        return cmd_baselines(args)
+    elif args.command == "frontier":
+        return cmd_frontier(args)
+    elif args.command == "trace":
+        return cmd_trace(args)
+    elif args.command == "compare":
+        return cmd_compare(args)
+    else:
+        parser.print_help()
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
