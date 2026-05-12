@@ -54,6 +54,90 @@ class TestDeterministicReplay:
             assert r1 == r2, f"Non-deterministic on {diff}: {r1} vs {r2}"
 
 
+class TestCrossPlatformReproducibility:
+    """Hardcoded reference values from seed=42, medium, 12-week approve-all.
+
+    These exact numbers must match on every Python 3.10–3.12 and on both
+    Linux and macOS.  If a code change shifts simulation output, update these
+    values deliberately — accidental drift means a reproducibility bug.
+    """
+
+    REFERENCE_REWARDS_APPROVE_ALL = [
+        0.18926261625420204,
+        0.1661511784015515,
+        0.1566094370300464,
+        0.03247810299927504,
+        0.09585410961724107,
+        0.15058750952119548,
+        0.010045141924479722,
+        0.12944029563615014,
+        0.1470659841869491,
+        0.05946596642915131,
+        -0.13662678883026494,
+        0.16133278446531535,
+    ]
+    REFERENCE_TOTAL_REWARD_APPROVE_ALL = 1.161666337635292
+    REFERENCE_FINAL_CASH_APPROVE_ALL = 585154552.8511978
+    REFERENCE_EBITDA_MARGIN_APPROVE_ALL = -0.5209388557736202
+
+    REFERENCE_REWARDS_REJECT_ALL = [
+        0.1769278191144848,
+        -0.012024532754634186,
+        -0.16222580783034818,
+        -0.213745601117238,
+        -0.1594090404327218,
+        -0.16166563984502058,
+        -0.16914775530546328,
+        -0.22408618059988594,
+        -0.210219135770829,
+        -0.2449339065372373,
+        -0.26136173273945007,
+        -0.6825410687199475,
+    ]
+    REFERENCE_TOTAL_REWARD_REJECT_ALL = -2.324432582538291
+    REFERENCE_FINAL_CASH_REJECT_ALL = 433881859.189679
+
+    def _run_episode(self, policy_fn, seed=42, weeks=12, difficulty="medium"):
+        cfg = BenchmarkConfig(weeks_per_quarter=weeks, difficulty=difficulty)
+        env = RetailCEOEnv(cfg)
+        obs = env.reset(seed=seed)
+        rewards = []
+        while not obs.done:
+            obs = env.step(policy_fn(obs))
+            if obs.reward is not None:
+                rewards.append(obs.reward)
+        return rewards, env.state.company.cash_inr, env.state.company.pnl_qtd.ebitda_margin_pct
+
+    def test_approve_all_rewards_exact(self):
+        rewards, cash, margin = self._run_episode(_approve_all)
+        assert rewards == self.REFERENCE_REWARDS_APPROVE_ALL, (
+            f"Reward sequence mismatch (approve-all, seed=42, medium, 12wk)"
+        )
+
+    def test_approve_all_total_reward_exact(self):
+        rewards, _, _ = self._run_episode(_approve_all)
+        assert sum(rewards) == self.REFERENCE_TOTAL_REWARD_APPROVE_ALL
+
+    def test_approve_all_final_cash_exact(self):
+        _, cash, _ = self._run_episode(_approve_all)
+        assert cash == self.REFERENCE_FINAL_CASH_APPROVE_ALL
+
+    def test_approve_all_ebitda_margin_exact(self):
+        _, _, margin = self._run_episode(_approve_all)
+        assert margin == self.REFERENCE_EBITDA_MARGIN_APPROVE_ALL
+
+    def test_reject_all_rewards_exact(self):
+        rewards, cash, _ = self._run_episode(_reject_all)
+        assert rewards == self.REFERENCE_REWARDS_REJECT_ALL, (
+            f"Reward sequence mismatch (reject-all, seed=42, medium, 12wk)"
+        )
+        assert cash == self.REFERENCE_FINAL_CASH_REJECT_ALL
+
+    def test_reject_all_total_reward_exact(self):
+        rewards, _, _ = self._run_episode(_reject_all)
+        assert sum(rewards) == self.REFERENCE_TOTAL_REWARD_REJECT_ALL
+
+
 class TestStepCount:
     """Episode length matches config."""
 

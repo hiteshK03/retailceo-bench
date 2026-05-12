@@ -202,8 +202,8 @@ retailceo-bench/
 
 ### Must Have
 
-- [x] **Test suite** — deterministic seed replay, reward bounds, KPI delta correctness, crisis activation/expiry, cash floor penalty, proposal execution for each action type (121 tests)
-- [ ] **Deterministic reproducibility guarantee** — verify `reset(seed=42)` + 12 identical actions = identical total reward across platforms (Linux/macOS, Python 3.10–3.12)
+- [x] **Test suite** — deterministic seed replay, reward bounds, KPI delta correctness, crisis activation/expiry, cash floor penalty, proposal execution for each action type (127 tests)
+- [x] **Deterministic reproducibility guarantee** — hardcoded reference values for seed=42 approve-all and reject-all episodes; CI verifies exact match on Linux + macOS, Python 3.10–3.12
 - [x] **LICENSE file** — MIT
 - [x] **`.gitignore`** — Python defaults + egg-info + trace JSON artifacts
 - [x] **Git repository init** — `git init`, initial commit, GitHub remote
