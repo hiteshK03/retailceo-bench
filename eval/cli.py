@@ -24,6 +24,19 @@ from .policies import (
 )
 from .runner import EpisodeResult, run_one_episode, run_policy, summarise
 
+PROTOCOLS = {
+    "lite": {
+        "seeds": list(range(42, 47)),       # 42–46, 5 seeds
+        "difficulties": ["medium"],
+        "weeks": 12,
+    },
+    "full": {
+        "seeds": list(range(42, 52)),       # 42–51, 10 seeds
+        "difficulties": ["easy", "medium", "hard"],
+        "weeks": 12,
+    },
+}
+
 
 def _parse_extra_headers() -> Dict[str, str]:
     raw = os.environ.get("ANTHROPIC_CUSTOM_HEADERS", "")
@@ -50,8 +63,7 @@ def _make_config(args) -> BenchmarkConfig:
 
 
 def cmd_baselines(args) -> int:
-    config = _make_config(args)
-    seeds = args.seeds or list(range(1, 6))
+    protocol = PROTOCOLS.get(args.protocol) if args.protocol else None
 
     all_policies = {
         "random": RandomCEO(seed=0),
@@ -62,11 +74,33 @@ def cmd_baselines(args) -> int:
     selected = args.policies or list(all_policies.keys())
     policies: List[CEOPolicy] = [all_policies[p] for p in selected]
 
+    if protocol:
+        seeds = args.seeds or protocol["seeds"]
+        difficulties = protocol["difficulties"]
+        weeks = protocol["weeks"]
+        print(f"[protocol: {args.protocol}] {len(seeds)} seeds × "
+              f"{len(difficulties)} difficulties × {weeks} weeks")
+    else:
+        seeds = args.seeds or list(range(1, 6))
+        difficulties = [args.difficulty]
+        weeks = args.weeks
+
     results_by_policy: Dict[str, List[EpisodeResult]] = {}
     for p in policies:
-        results_by_policy[p.name] = run_policy(
-            p, seeds, config=config, verbose=args.verbose, quiet=args.quiet,
-        )
+        for diff in difficulties:
+            config = BenchmarkConfig(
+                weeks_per_quarter=weeks,
+                horizon_years=getattr(args, "years", 0) or 0,
+                difficulty=diff,
+                crisis_prob=args.crisis_prob,
+                starting_cash_inr=args.starting_cash,
+            )
+            label = f"{p.name} ({diff})" if len(difficulties) > 1 else p.name
+            results_by_policy.setdefault(label, []).extend(
+                run_policy(
+                    p, seeds, config=config, verbose=args.verbose, quiet=args.quiet,
+                )
+            )
 
     summarise(results_by_policy)
 
@@ -75,6 +109,7 @@ def cmd_baselines(args) -> int:
             name: [
                 {
                     "seed": r.seed,
+                    "difficulty": r.difficulty,
                     "total_reward": r.total_reward,
                     "ebitda_margin_pct": r.ebitda_margin_pct,
                     "avg_stockout_pct": r.avg_stockout_pct,
@@ -98,8 +133,7 @@ def cmd_baselines(args) -> int:
 def cmd_frontier(args) -> int:
     from .frontier import FrontierCEO
 
-    config = _make_config(args)
-    seeds = args.seeds or list(range(1, 4))
+    protocol = PROTOCOLS.get(args.protocol) if args.protocol else None
 
     policy = FrontierCEO(
         model=args.model,
@@ -112,26 +146,53 @@ def cmd_frontier(args) -> int:
         permissive=args.permissive,
     )
 
-    results = run_policy(
-        policy, seeds, config=config, verbose=args.verbose, quiet=args.quiet,
-    )
-    summarise({policy.name: results})
+    if protocol:
+        seeds = args.seeds or protocol["seeds"]
+        difficulties = protocol["difficulties"]
+        weeks = protocol["weeks"]
+        print(f"[protocol: {args.protocol}] {len(seeds)} seeds × "
+              f"{len(difficulties)} difficulties × {weeks} weeks")
+    else:
+        seeds = args.seeds or list(range(1, 4))
+        difficulties = [args.difficulty]
+        weeks = args.weeks
+
+    all_results: Dict[str, List[EpisodeResult]] = {}
+    for diff in difficulties:
+        config = BenchmarkConfig(
+            weeks_per_quarter=weeks,
+            horizon_years=getattr(args, "years", 0) or 0,
+            difficulty=diff,
+            crisis_prob=args.crisis_prob,
+            starting_cash_inr=args.starting_cash,
+        )
+        label = f"{policy.name} ({diff})" if len(difficulties) > 1 else policy.name
+        results = run_policy(
+            policy, seeds, config=config, verbose=args.verbose, quiet=args.quiet,
+        )
+        all_results[label] = results
+
+    summarise(all_results)
 
     if args.out:
-        payload = [
-            {
-                "seed": r.seed,
-                "total_reward": r.total_reward,
-                "ebitda_margin_pct": r.ebitda_margin_pct,
-                "avg_stockout_pct": r.avg_stockout_pct,
-                "avg_nps": r.avg_nps,
-                "starting_cash_inr": r.starting_cash_inr,
-                "final_cash_inr": r.final_cash_inr,
-                "min_cash_inr": r.min_cash_inr,
-                "free_cash_flow_inr": r.free_cash_flow_inr,
-            }
-            for r in results
-        ]
+        payload = {
+            name: [
+                {
+                    "seed": r.seed,
+                    "difficulty": r.difficulty,
+                    "total_reward": r.total_reward,
+                    "ebitda_margin_pct": r.ebitda_margin_pct,
+                    "avg_stockout_pct": r.avg_stockout_pct,
+                    "avg_nps": r.avg_nps,
+                    "starting_cash_inr": r.starting_cash_inr,
+                    "final_cash_inr": r.final_cash_inr,
+                    "min_cash_inr": r.min_cash_inr,
+                    "free_cash_flow_inr": r.free_cash_flow_inr,
+                }
+                for r in res
+            ]
+            for name, res in all_results.items()
+        }
         with open(args.out, "w") as f:
             json.dump(payload, f, indent=2)
         print(f"\nResults saved to {args.out}")
@@ -259,6 +320,8 @@ def main() -> int:
     bp.add_argument("--policies", type=str, nargs="+", default=None,
                      help="Which policies to run (default: all)",
                      choices=["random", "all_approve", "heuristic", "oracle"])
+    bp.add_argument("--protocol", default=None, choices=["lite", "full"],
+                     help="Standardized eval protocol (overrides --seeds/--difficulty)")
     bp.add_argument("--out", type=str, default=None)
 
     # frontier
@@ -271,6 +334,8 @@ def main() -> int:
     fp.add_argument("--dual-head", action="store_true")
     fp.add_argument("--permissive", action="store_true")
     fp.add_argument("--seeds", type=int, nargs="+", default=None)
+    fp.add_argument("--protocol", default=None, choices=["lite", "full"],
+                     help="Standardized eval protocol (overrides --seeds/--difficulty)")
     fp.add_argument("--out", type=str, default=None)
 
     # trace

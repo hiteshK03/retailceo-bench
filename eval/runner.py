@@ -25,6 +25,7 @@ class EpisodeResult:
     min_cash_inr: float
     avg_stockout_pct: float
     avg_nps: float
+    difficulty: str = "medium"
     trace: Optional[List[Dict]] = field(default=None)
 
     @property
@@ -108,6 +109,7 @@ def run_one_episode(
         min_cash_inr=min_cash,
         avg_stockout_pct=statistics.mean(stockouts) if stockouts else 0.0,
         avg_nps=statistics.mean(npss) if npss else 0.0,
+        difficulty=config.difficulty if config else "medium",
         trace=trace,
     )
 

@@ -209,7 +209,7 @@ retailceo-bench/
 - [x] **Git repository init** — `git init`, initial commit, GitHub remote
 - [x] **CI/CD** — GitHub Actions: pytest across Python 3.10–3.12 on push/PR
 - [ ] **Leaderboard with more models** — GPT-4o, GPT-4.1, Gemini 2.5 Pro, Llama 4, open-weight models
-- [ ] **Standardized evaluation protocol** — document exact seed set (e.g., 42–51), difficulty, weeks, and number of runs required for official leaderboard submission
+- [x] **Standardized evaluation protocol** — lite (5 seeds, medium) and full (10 seeds, 3 difficulties) tiers with `--protocol` CLI flag
 - [ ] **Human baseline** — have 3-5 humans play the benchmark to establish human-level performance
 - [ ] **Result artifacts** — canonical JSON results for every leaderboard entry committed to `results/` directory
 - [ ] **Clean up scratch files** — remove `run_smoke.py`, `baseline_seed42.json`, `haiku_smoke.json`, `sonnet_smoke.json`, `sonnet_trace.json` from repo root
@@ -263,15 +263,42 @@ Dussehra, Diwali, Chhath Puja, Christmas, New Year — each with demand multipli
 
 ---
 
-## Evaluation Protocol (Draft)
+## Evaluation Protocol
 
-For reproducible leaderboard submissions:
+Two tiers are available depending on cost/time budget:
 
-1. **Seeds:** 42, 43, 44, 45, 46 (5 seeds minimum)
-2. **Difficulties:** easy, medium, hard (report all three)
-3. **Episode length:** 13 weeks (default quarter)
-4. **Report:** mean ± std of total reward, plus EBITDA%, stockout%, NPS, FCF
-5. **Traces:** submit full trace JSONs for verification
+### Lite (quick comparison, ~50 LLM calls)
+
+| Parameter | Value |
+|-----------|-------|
+| **Seeds** | 42, 43, 44, 45, 46 (5 seeds) |
+| **Difficulty** | medium only |
+| **Episode length** | 12 weeks |
+| **Report** | mean ± stderr of total reward, EBITDA%, stockout%, NPS, FCF |
+
+```bash
+python -m eval.cli frontier --model <model> --protocol lite
+```
+
+### Full (official leaderboard submission, ~150 LLM calls)
+
+| Parameter | Value |
+|-----------|-------|
+| **Seeds** | 42, 43, 44, 45, 46, 47, 48, 49, 50, 51 (10 seeds) |
+| **Difficulty** | easy, medium, hard (all three) |
+| **Episode length** | 12 weeks |
+| **Report** | mean ± stderr per difficulty + overall average |
+
+```bash
+python -m eval.cli frontier --model <model> --protocol full
+```
+
+### Rules for submission
+
+1. **Temperature:** 0.0 (greedy decoding)
+2. **No retries:** if the model produces an unparseable response, the fallback action (request_info for all proposals) is used — do not retry
+3. **Traces:** submit full trace JSONs for independent verification
+4. **System prompt:** use the default prompt from `retailceo/prompts.py` — no custom system prompts or few-shot examples
 
 ---
 
