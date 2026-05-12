@@ -1,5 +1,7 @@
 # RetailCEO-Bench
 
+[![CI](https://github.com/hiteshK03/retailceo-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/hiteshK03/retailceo-bench/actions/workflows/ci.yml)
+
 **Can LLMs run a retail chain profitably?**
 
 RetailCEO-Bench is an evaluation benchmark that tests how well large language models can operate as CEO of a simulated tier-2 Indian retail chain over a 12-week quarter (or multi-year horizon). The LLM receives weekly KPI reports, department proposals, crisis alerts, and competitor intelligence, then must make approval/rejection/modification decisions that keep the company profitable, solvent, and growing.
