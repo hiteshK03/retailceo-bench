@@ -8,16 +8,15 @@ RetailCEO-Bench is an evaluation benchmark that tests how well large language mo
 
 ---
 
-## Leaderboard (13-Week, 3 Seeds)
+## Leaderboard (Full Protocol: 10 Seeds × 3 Difficulties)
 
 | Policy | Easy | Medium | Hard | Avg |
 |--------|------|--------|------|-----|
-| Oracle (peek at crises) | +2.56 | +1.86 | +0.72 | +1.71 |
-| Heuristic (19 rules) | +2.13 | +1.55 | +0.33 | +1.34 |
-| **Claude Opus 4.7** | +1.47 | +0.75 | -0.30 | +0.64 |
-| **Claude Sonnet 4** | +1.44 | +0.90 | +0.01 | +0.78 |
-| All-Approve | +1.08 | +0.52 | -0.45 | +0.38 |
-| Random | -0.32 | -0.89 | -1.67 | -0.96 |
+| Heuristic (19 rules) | +2.03 | +1.62 | +0.26 | +1.30 |
+| **Claude Sonnet 4** | +1.63 | +1.16 | +0.34 | +1.04 |
+| **Claude Opus 4** | +1.56 | +1.05 | +0.27 | +0.96 |
+| All-Approve | +1.85 | +1.13 | -0.54 | +0.81 |
+| Random | +0.31 | -0.29 | -1.41 | -0.46 |
 
 > **Reward range:** theoretical [-4.5, +3.5]. Higher is better.
 > Frontier models currently underperform the hand-crafted Heuristic baseline — closing this gap is the benchmark's core challenge.
@@ -27,18 +26,15 @@ RetailCEO-Bench is an evaluation benchmark that tests how well large language mo
 
 | Policy | Difficulty | Reward | EBITDA% | Stockout% | NPS | FCF (Cr) |
 |--------|-----------|--------|---------|-----------|-----|----------|
-| Opus 4.7 | Easy | +1.47 | +7.75 | 7.4 | 27.7 | +21.4 |
-| Opus 4.7 | Medium | +0.75 | +1.85 | 7.9 | 27.0 | +16.7 |
-| Opus 4.7 | Hard | -0.30 | -2.00 | 7.3 | 26.8 | +14.4 |
-| Sonnet 4 | Easy | +1.44 | +7.31 | 6.5 | 28.4 | +23.0 |
-| Sonnet 4 | Medium | +0.90 | +3.81 | 8.3 | 25.8 | +26.0 |
-| Sonnet 4 | Hard | +0.01 | -1.15 | 5.3 | 28.1 | +17.2 |
-
-**1-Year Easy (1 seed):**
-| Policy | Reward | EBITDA% | Stockout% | NPS | FCF (Cr) |
-|--------|--------|---------|-----------|-----|----------|
-| Opus 4.7 | +1.35 | +5.61 | 7.5 | 25.7 | +21.9 |
-| Sonnet 4 | +0.48 | +2.30 | 11.6 | 19.1 | +50.9 |
+| Heuristic | Easy | +2.03 | +10.37 | 1.8 | 34.4 | +37.4 |
+| Heuristic | Medium | +1.62 | +5.82 | 0.9 | 34.1 | +36.1 |
+| Heuristic | Hard | +0.26 | +0.99 | 1.2 | 32.7 | +27.6 |
+| Sonnet 4 | Easy | +1.63 | +8.95 | 5.6 | 30.6 | +21.4 |
+| Sonnet 4 | Medium | +1.16 | +4.55 | 4.5 | 30.8 | +19.8 |
+| Sonnet 4 | Hard | +0.34 | +0.18 | 2.2 | 32.9 | +12.5 |
+| Opus 4 | Easy | +1.56 | +8.72 | 9.0 | 28.6 | +22.7 |
+| Opus 4 | Medium | +1.05 | +4.11 | 6.7 | 29.5 | +19.5 |
+| Opus 4 | Hard | +0.27 | +0.15 | 2.7 | 32.3 | +17.1 |
 
 </details>
 
@@ -156,7 +152,7 @@ Total episode reward = sum of weekly rewards + terminal reward.
 |-------|-----------|--------|
 | Easy | 0.05 | Departments mostly aligned; proposals are mostly helpful |
 | Medium | 0.15–0.30 | Mixed quality; some self-serving proposals need filtering |
-| Hard | 0.35–0.55 | Significant noise; many proposals hurt the company |
+| Hard | 0.60–0.85 | Majority adversarial; approving blindly destroys EBITDA (-15%) |
 
 ### Key Decision Levers
 

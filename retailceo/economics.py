@@ -290,8 +290,8 @@ CASH_PRESSURE_PERSISTENCE_WEEKS: int = 2
 
 DIFFICULTY_DRIFT_MAP: Dict[str, Dict[str, float]] = {
     "easy":   {"supply_chain": 0.05, "store_ops": 0.05, "finance": 0.05, "growth": 0.05},
-    "medium": {"supply_chain": 0.20, "store_ops": 0.15, "finance": 0.10, "growth": 0.25},
-    "hard":   {"supply_chain": 0.50, "store_ops": 0.45, "finance": 0.35, "growth": 0.55},
+    "medium": {"supply_chain": 0.25, "store_ops": 0.20, "finance": 0.15, "growth": 0.30},
+    "hard":   {"supply_chain": 0.75, "store_ops": 0.70, "finance": 0.60, "growth": 0.85},
 }
 
 DIFFICULTY_DRIFT_JITTER: Dict[str, float] = {

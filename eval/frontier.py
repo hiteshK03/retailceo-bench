@@ -18,7 +18,7 @@ class FrontierCEO(CEOPolicy):
     so the reward it achieves is a fair comparison.
     """
 
-    DEFAULT_MAX_TOKENS: int = 600
+    DEFAULT_MAX_TOKENS: int = 4096
 
     def __init__(
         self,
@@ -32,7 +32,7 @@ class FrontierCEO(CEOPolicy):
         max_retries: int = 3,
         request_timeout_s: float = 90.0,
         dual_head: bool = False,
-        action_max_tokens: int = 300,
+        action_max_tokens: int = 1024,
         journal_max_tokens: int = 400,
         permissive: bool = False,
     ):
