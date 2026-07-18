@@ -31,6 +31,8 @@ class RunConfig(BaseModel):
     policy: PolicyKind = "heuristic"
     difficulty: Difficulty = "medium"
     weeks: int = Field(default=12, ge=1, le=52)
+    mode: Literal["auto", "human"] = "auto"
+    player_handle: Optional[str] = Field(default=None, max_length=64)
 
 
 class RunCreated(BaseModel):
@@ -45,3 +47,12 @@ class RunState(BaseModel):
     config: RunConfig
     latest_event: Optional[Dict[str, Any]] = None
     events: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class HumanWeekDecisions(BaseModel):
+    """One week's decisions submitted by a human player over the socket."""
+
+    week: int = Field(..., ge=1)
+    decisions: List[Dict[str, Any]] = Field(default_factory=list)
+    journal: str = Field(default="")
+    played_at: Optional[str] = Field(default=None, description="Client ISO8601")

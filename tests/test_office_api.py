@@ -81,3 +81,23 @@ def test_run_completed_summary():
     assert len(summary["weeks"]) == 12
     assert "total_reward" in summary["summary"]
     assert "rogue_ground_truth" not in summary
+
+
+def test_runconfig_defaults_to_auto_mode():
+    from office_api.schemas import RunConfig
+    cfg = RunConfig()
+    assert cfg.mode == "auto"
+    assert cfg.player_handle is None
+
+
+def test_runconfig_accepts_human_mode_and_handle():
+    from office_api.schemas import RunConfig
+    cfg = RunConfig(mode="human", player_handle="alice", difficulty="hard", seed=44)
+    assert cfg.mode == "human" and cfg.player_handle == "alice"
+
+
+def test_human_week_decisions_model():
+    from office_api.schemas import HumanWeekDecisions
+    msg = HumanWeekDecisions(week=1, decisions=[{"proposal_id": "S-1", "verdict": "approve"}])
+    assert msg.week == 1 and msg.decisions[0]["verdict"] == "approve"
+    assert msg.journal == ""
