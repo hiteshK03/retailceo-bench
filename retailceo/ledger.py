@@ -359,6 +359,7 @@ def _pending_buffer(ledger: CompanyLedger) -> Dict[str, Any]:
             "sla_delta_pts_next_week": 0.0,
             "weekly_opex_bump_inr": 0.0,
             "campaigns_running": [],
+            "capex_projects": [],
         })
     return ledger._pending  # type: ignore[attr-defined]
 
@@ -497,7 +498,21 @@ def execute_approved_proposals(
         elif prop.action == "capex.approve":
             amt = float(params.get("amount_inr", 0))
             effect_cost = -amt
-            note = f"CapEx: -₹{amt:,.0f} ({params.get('project_id', 'unknown')})"
+            payback_weeks = max(1, int(params.get("payback_weeks", 24) or 24))
+            # Amortised revenue uplift: a project returns a fixed weekly revenue
+            # bump for `payback_weeks` weeks. Faster payback => bigger weekly
+            # bump => the uplift lands inside the episode and clears its cost;
+            # slow payback => most of the return falls beyond the horizon =>
+            # net negative. This turns capex from a pure-cost trap into a real
+            # fast-vs-slow judgement call. Weekly bump ~= amt / payback * uplift.
+            weekly_gain = (amt / payback_weeks) * E.CAPEX_PAYBACK_UPLIFT
+            buf["capex_projects"].append(
+                {"weekly_gain_inr": weekly_gain, "weeks_remaining": payback_weeks}
+            )
+            note = (
+                f"CapEx: -₹{amt:,.0f} ({params.get('project_id', 'unknown')}, "
+                f"payback {payback_weeks}w, +₹{weekly_gain:,.0f}/wk)"
+            )
 
         elif prop.action == "price.guardrail_change":
             delta = float(params.get("min_margin_delta_pts", 0))
@@ -520,7 +535,11 @@ def execute_approved_proposals(
             spend = float(params.get("spend_inr", 0))
             effect_cost = -spend
             g = ledger.growth_lever_mult
-            base_effect = min(0.20, spend / 3e7) * g
+            # Effect sized so a well-timed (festival) campaign clears its cost:
+            # base_effect on ~₹5Cr/wk revenue must beat `spend`. At the old cap
+            # (min 0.20, spend/3e7) even festival campaigns were ~break-even;
+            # raising the divisor floor and cap makes timing a real +EV lever.
+            base_effect = min(0.35, spend / 1.5e7) * g
             festival_synergy = _festival_synergy_mult(week, multi_year)
             buf["revenue_mult_next_week"] *= (1.0 + base_effect * festival_synergy)
             buf["campaigns_running"].append({"spend": spend, "weeks_remaining": 2})
@@ -647,6 +666,21 @@ def consume_pending_effects(ledger: CompanyLedger) -> Dict[str, float]:
         "sla_delta_pts": buf["sla_delta_pts_next_week"],
         "weekly_opex_bump_inr": buf["weekly_opex_bump_inr"],
     }
+    # Pay out amortised capex returns as high-margin revenue (flows to EBITDA
+    # and cash). Each project pays weekly_gain_inr for weeks_remaining weeks.
+    capex_gain = 0.0
+    capex_still = []
+    for proj in buf.get("capex_projects", []):
+        if proj["weeks_remaining"] > 0:
+            capex_gain += proj["weekly_gain_inr"]
+            proj["weeks_remaining"] -= 1
+            if proj["weeks_remaining"] > 0:
+                capex_still.append(proj)
+    if capex_gain > 0:
+        # Treat as near-pure-margin return (10% COGS) so it lifts EBITDA.
+        settle_revenue(ledger, capex_gain, capex_gain * 0.10)
+    buf["capex_projects"] = capex_still
+
     # Tick campaign durations
     still_running = []
     for c in buf["campaigns_running"]:

@@ -60,31 +60,37 @@ Full protocol: 10 seeds × 3 difficulties. Reward range is theoretical
 
 | Policy | Easy | Medium | Hard | Avg |
 |--------|------|--------|------|-----|
-| Heuristic (19 rules) | +2.00 | +1.59 | +0.21 | +1.27 |
+| Oracle (ceiling) | +2.01 | +1.60 | +0.32 | +1.31 |
+| Heuristic (19 rules) | +2.01 | +1.60 | +0.24 | +1.28 |
 | **Claude Sonnet 4** | _re-run pending_ | | | |
 | **Claude Opus 4** | _re-run pending_ | | | |
-| All-Approve | +1.85 | +1.13 | -0.54 | +0.81 |
-| Random | +0.22 | -0.36 | -1.48 | -0.54 |
+| All-Approve | +2.08 | +1.32 | -0.17 | +1.08 |
+| Random | +0.42 | -0.27 | -1.37 | -0.41 |
 
 > Baselines refreshed under the corrected reward (10 seeds × 3 difficulties).
 > Frontier rows are pending re-run under the same reward. Frontier models
 > previously **underperformed the hand-crafted Heuristic baseline** — closing
-> that gap is the benchmark's core challenge.
+> that gap is the benchmark's core challenge. The **Oracle** is now a genuine
+> ceiling above the heuristic (via horizon-aware capex foresight); see
+> [docs/CALIBRATION.md](./docs/CALIBRATION.md) for the reward-design analysis.
 
 <details>
 <summary>Extended metrics (click to expand)</summary>
 
 | Policy | Difficulty | Reward | EBITDA% | Stockout% | NPS | FCF (Cr) |
 |--------|-----------|--------|---------|-----------|-----|----------|
-| Heuristic | Easy | +2.00 | +10.37 | 1.8 | 34.4 | +37.4 |
-| Heuristic | Medium | +1.59 | +5.82 | 0.9 | 34.1 | +36.1 |
-| Heuristic | Hard | +0.21 | +0.99 | 1.2 | 32.7 | +27.6 |
-| All-Approve | Easy | +1.85 | +3.58 | 3.3 | 33.9 | +44.2 |
-| All-Approve | Medium | +1.13 | -0.73 | 2.7 | 33.3 | +37.6 |
-| All-Approve | Hard | -0.54 | -15.52 | 3.1 | 32.8 | +19.7 |
-| Random | Easy | +0.22 | +1.50 | 17.6 | 15.3 | +40.1 |
-| Random | Medium | -0.36 | -2.26 | 18.0 | 16.6 | +39.1 |
-| Random | Hard | -1.48 | -12.44 | 15.1 | 19.1 | +27.5 |
+| Oracle | Easy | +2.01 | +10.50 | 1.9 | 34.3 | +36.5 |
+| Oracle | Medium | +1.60 | +6.02 | 1.1 | 34.0 | +37.0 |
+| Oracle | Hard | +0.32 | +1.62 | 1.1 | 32.8 | +29.0 |
+| Heuristic | Easy | +2.01 | +10.55 | 1.9 | 34.3 | +36.4 |
+| Heuristic | Medium | +1.60 | +6.00 | 1.1 | 34.0 | +36.8 |
+| Heuristic | Hard | +0.24 | +1.06 | 1.2 | 32.7 | +27.9 |
+| All-Approve | Easy | +2.08 | +7.62 | 4.2 | 33.1 | +49.2 |
+| All-Approve | Medium | +1.32 | +2.78 | 4.5 | 31.7 | +42.0 |
+| All-Approve | Hard | -0.17 | -5.86 | 5.0 | 31.1 | +28.0 |
+| Random | Easy | +0.42 | +4.87 | 19.2 | 14.2 | +45.0 |
+| Random | Medium | -0.27 | -0.83 | 17.6 | 17.3 | +38.0 |
+| Random | Hard | -1.37 | -6.99 | 18.1 | 14.6 | +33.6 |
 
 </details>
 
@@ -365,6 +371,16 @@ with a clean zero point.
 > genuinely urgent proposals is penalized. The zero-scored journal requirement
 > was also relaxed (the journal is optional and explicitly unscored) to stop
 > wasting output tokens in both eval and training.
+>
+> **Reward-calibration fixes (this release):** `capex.approve` was a strictly
+> dominated pure-cost action (always correct to reject); it now returns an
+> amortised revenue stream sized by `payback_weeks`, making it a genuine
+> fast-vs-slow judgement. `campaign.launch` effect was raised so well-timed
+> festival campaigns can clear their cost. `budget_allocations` — an inert field
+> the prompt falsely advertised as score-driving — is now documented as
+> unscored. See [docs/CALIBRATION.md](./docs/CALIBRATION.md) for the full
+> analysis (why the heuristic beat frontier models, cross-verified against the
+> code).
 
 ---
 
@@ -454,15 +470,17 @@ See [`office/README.md`](./office/README.md) for the frontend workflow.
 standardized lite/full protocols · OpenEnv training environment with train/eval seed split ·
 reward-integrity fixes (false-reject penalty, journal relaxation).
 
+**Done (this release):** trace visualization (`plot` subcommand) · token/cost
+reporting · `compare` bootstrap CIs + significance · Oracle is now a true
+ceiling above the heuristic · reward-calibration writeup
+([docs/CALIBRATION.md](./docs/CALIBRATION.md)) · baselines refreshed under the
+corrected reward, committed under `results/`.
+
 **Next:**
 - [ ] Leaderboard with more models (GPT-4o/4.1, Gemini 2.5 Pro, Llama, Qwen, open-weight)
-- [ ] Refresh leaderboard under the corrected reward
-- [ ] Committed result artifacts under `results/` for every leaderboard row
+- [ ] Refresh frontier rows under the corrected reward
 - [ ] Human baseline (3–5 players)
-- [ ] Make Oracle a true ceiling (currently ≈ Heuristic)
-- [ ] Trace visualization (KPI / cash / stockout trajectories)
-- [ ] Reward-calibration writeup: why the heuristic beats frontier models
-- [ ] Token/cost reporting in eval output
+- [ ] Widen the Oracle ceiling (festival campaign timing; hard-difficulty edge is borderline)
 - [ ] Paper / technical report + BibTeX
 
 ---
@@ -486,9 +504,11 @@ for repros).
 
 ## Known Limitations
 
-1. **Heuristic ceiling** — the hand-crafted heuristic still beats frontier
-   models, suggesting the benchmark rewards conservative play or that current
-   LLMs lack multi-objective business balancing.
+1. **Heuristic strength** — the hand-crafted heuristic is a strong baseline
+   frontier models have not yet cleared. The reward-calibration analysis
+   ([docs/CALIBRATION.md](./docs/CALIBRATION.md)) traces this to reward
+   structure (not information asymmetry) and this release addresses the worst
+   offenders (dominated capex, inert budget decoy); frontier re-runs pending.
 2. **Prompt sensitivity** — results shift with system-prompt wording.
 3. **Single-player** — no negotiation, delegation, or multi-agent dynamics.
 4. **Simplified economics** — no supply-chain lead times, regional pricing, or

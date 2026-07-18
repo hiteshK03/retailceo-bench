@@ -455,4 +455,33 @@ class OracleCEO(HeuristicCEO):
                 return "approve", "Oracle: approve crisis-prep PO with foresight."
             return None
 
+        # Fast-payback capex is +EV (see economics.CAPEX_PAYBACK_UPLIFT), but
+        # only if the return lands inside the weeks REMAINING in the episode.
+        # Return/cost = uplift * min(weeks_left, payback) / payback; approve iff
+        # that clears 1.0. The heuristic blanket-rejects capex, so horizon-aware
+        # capex judgement is where the oracle pulls ahead.
+        if p.action == "capex.approve":
+            if cash_state == "crisis":
+                return "reject", "Oracle: reject capex during cash crisis."
+            payback = max(1, int(params.get("payback_weeks", 99) or 99))
+            weeks_left = cls._weeks_remaining(env)
+            ev_ratio = (
+                E.CAPEX_PAYBACK_UPLIFT * min(weeks_left, payback) / payback
+            )
+            if ev_ratio > 1.0:
+                return "approve", (
+                    f"Oracle: approve capex (EV {ev_ratio:.2f}x over "
+                    f"{weeks_left}w left, payback {payback}w)."
+                )
+            return "reject", (
+                f"Oracle: reject capex (EV {ev_ratio:.2f}x <= 1 within horizon)."
+            )
+
         return None
+
+    @staticmethod
+    def _weeks_remaining(env) -> int:
+        """Weeks left in the episode including the current one (>=1)."""
+        if env is None:
+            return 1
+        return max(1, env.MAX_WEEKS - env._state.week + 1)

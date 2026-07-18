@@ -2,6 +2,8 @@
 
 import random
 
+import pytest
+
 from retailceo import economics as E
 from retailceo import ledger as LD
 from retailceo.models import (
@@ -299,3 +301,59 @@ class TestSnapshotWeeklyKPIs:
         assert snap.revenue_inr == 6e7
         assert snap.stockout_rate_pct == 3.0
         assert snap.nps == 38.0
+
+
+class TestCapexAmortisation:
+    """CapEx is a fast-vs-slow payback judgement, not a pure-cost trap."""
+
+    def _approve_capex(self, payback_weeks, amount=1e7):
+        ledger, rng = _fresh_ledger()
+        prop = Proposal(
+            proposal_id="F-1", dept="finance", action="capex.approve",
+            params={"project_id": "p1", "amount_inr": amount,
+                    "payback_weeks": payback_weeks},
+            cost_inr=-amount, urgency="low",
+        )
+        dec = ProposalDecision(proposal_id="F-1", verdict="approve")
+        cash_before = ledger.cash_inr
+        LD.execute_approved_proposals(ledger, [prop], [dec], rng, week=1)
+        # Cash is debited up front by amount.
+        assert ledger.cash_inr == cash_before - amount
+        # Pay out the amortised return over the full payback window.
+        total_gain = 0.0
+        for _ in range(payback_weeks + 2):
+            before = ledger.cash_inr
+            LD.consume_pending_effects(ledger)
+            total_gain += ledger.cash_inr - before
+        return amount, total_gain
+
+    def test_fast_payback_is_positive_ev_full_horizon(self):
+        amount, gain = self._approve_capex(payback_weeks=12)
+        # Over the full payback window the return exceeds the cost (uplift>1).
+        assert gain > amount
+
+    def test_gain_stops_after_payback_window(self):
+        amount, gain = self._approve_capex(payback_weeks=6)
+        # uplift=2.0 => total return ~2x cost, delivered then stops.
+        assert gain == pytest.approx(amount * E.CAPEX_PAYBACK_UPLIFT, rel=1e-9)
+
+
+class TestOracleCeiling:
+    """Oracle must be a genuine ceiling: >= heuristic on every difficulty."""
+
+    def test_oracle_at_least_heuristic(self):
+        from eval.policies import HeuristicCEO, OracleCEO
+        from eval.runner import run_policy
+        from retailceo.models import BenchmarkConfig
+        import statistics
+
+        seeds = list(range(42, 52))
+        for diff in ("easy", "medium", "hard"):
+            cfg = BenchmarkConfig(weeks_per_quarter=12, difficulty=diff)
+            h = statistics.mean(
+                r.total_reward for r in run_policy(HeuristicCEO(), seeds, config=cfg, quiet=True)
+            )
+            o = statistics.mean(
+                r.total_reward for r in run_policy(OracleCEO(), seeds, config=cfg, quiet=True)
+            )
+            assert o >= h - 1e-9, f"oracle {o:.3f} < heuristic {h:.3f} on {diff}"

@@ -323,6 +323,18 @@ DIFFICULTY_GROWTH_LEVER_MULT: Dict[str, float] = {
     "hard":   1.0,
 }
 
+# CapEx amortised-return multiplier.  A capex project returns
+# (amount / payback_weeks) * CAPEX_PAYBACK_UPLIFT in near-pure-margin revenue
+# each week for payback_weeks weeks.  At 2.0, fast-payback projects (<=~20wk)
+# clear their cost inside a 12-week episode (+EV) while slow ones (>=~24wk)
+# do not (-EV) — making capex an actual fast-vs-slow judgement rather than a
+# pure-cost trap that is always correct to reject.
+CAPEX_PAYBACK_UPLIFT: float = 2.0
+
+# Payback-week threshold at/below which capex is +EV inside a 12-week episode
+# (derived from CAPEX_PAYBACK_UPLIFT). The oracle approves capex at/below this.
+CAPEX_ORACLE_PAYBACK_MAX: int = 20
+
 # Festival-campaign synergy: campaigns launched during festival weeks get a
 # bonus multiplier on their revenue effect.  Rewards timing-aware LLMs.
 FESTIVAL_CAMPAIGN_SYNERGY_MULT: float = 1.8
