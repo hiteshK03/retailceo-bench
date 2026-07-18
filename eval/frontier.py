@@ -11,6 +11,17 @@ from retailceo.models import CEOAction, CEOObservation, ProposalDecision
 from .policies import CEOPolicy
 
 
+# Rough public list pricing, USD per 1M tokens: (input, output).
+# Substring-matched against the model id; most-specific keys first.
+PRICING_USD_PER_MTOK = {
+    "gpt-4o-mini": (0.15, 0.60),
+    "gpt-4o": (2.50, 10.00),
+    "claude-opus": (15.00, 75.00),
+    "claude-sonnet": (3.00, 15.00),
+    "claude-haiku": (0.80, 4.00),
+}
+
+
 class FrontierCEO(CEOPolicy):
     """CEO policy backed by a hosted frontier LLM.
 
@@ -80,6 +91,26 @@ class FrontierCEO(CEOPolicy):
         self.total_tokens = 0
         self.total_prompt_tokens = 0
         self.total_completion_tokens = 0
+
+    def token_usage(self) -> Dict[str, int]:
+        return {
+            "total_tokens": self.total_tokens,
+            "prompt_tokens": self.total_prompt_tokens,
+            "completion_tokens": self.total_completion_tokens,
+        }
+
+    def estimate_cost_usd(self, prompt_tokens, completion_tokens):
+        if prompt_tokens is None or completion_tokens is None:
+            return None
+        model = self._model.lower()
+        rate = None
+        for key, r in PRICING_USD_PER_MTOK.items():
+            if key in model:
+                rate = r
+                break
+        if rate is None:
+            return None
+        return prompt_tokens / 1e6 * rate[0] + completion_tokens / 1e6 * rate[1]
 
     @staticmethod
     def _resolve_provider(

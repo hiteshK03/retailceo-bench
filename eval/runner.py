@@ -27,6 +27,10 @@ class EpisodeResult:
     avg_nps: float
     difficulty: str = "medium"
     trace: Optional[List[Dict]] = field(default=None)
+    prompt_tokens: Optional[int] = None
+    completion_tokens: Optional[int] = None
+    total_tokens: Optional[int] = None
+    est_cost_usd: Optional[float] = None
 
     @property
     def free_cash_flow_inr(self) -> float:
@@ -55,6 +59,8 @@ def run_one_episode(
 
     starting_cash = env.state.company.cash_inr
     min_cash = starting_cash
+
+    usage_before = policy.token_usage()
 
     for w in range(1, env.MAX_WEEKS + 1):
         action = policy.act(obs, env=env, week=w)
@@ -96,6 +102,16 @@ def run_one_episode(
 
     env.close()
 
+    usage_after = policy.token_usage()
+    prompt_tokens = completion_tokens = total_tokens = None
+    if usage_before is not None and usage_after is not None:
+        prompt_tokens = usage_after["prompt_tokens"] - usage_before["prompt_tokens"]
+        completion_tokens = (
+            usage_after["completion_tokens"] - usage_before["completion_tokens"]
+        )
+        total_tokens = usage_after["total_tokens"] - usage_before["total_tokens"]
+    est_cost_usd = policy.estimate_cost_usd(prompt_tokens, completion_tokens)
+
     return EpisodeResult(
         policy=policy.name,
         seed=seed,
@@ -111,6 +127,10 @@ def run_one_episode(
         avg_nps=statistics.mean(npss) if npss else 0.0,
         difficulty=config.difficulty if config else "medium",
         trace=trace,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        total_tokens=total_tokens,
+        est_cost_usd=est_cost_usd,
     )
 
 
@@ -147,7 +167,8 @@ def summarise(results_by_policy: Dict[str, List[EpisodeResult]]) -> None:
         f"{'tot_r (mean±sd)':>18}  {'EBITDA%':>7}  "
         f"{'stockout%':>9}  {'NPS':>5}  "
         f"{'start_cash':>11}  {'final_cash':>11}  "
-        f"{'FCF':>11}  {'cash_ret%':>9}"
+        f"{'FCF':>11}  {'cash_ret%':>9}  "
+        f"{'tok/ep':>10}  {'$/ep':>8}"
     )
     print("\n" + header)
     print("-" * len(header))
@@ -164,6 +185,10 @@ def summarise(results_by_policy: Dict[str, List[EpisodeResult]]) -> None:
         final_cash = statistics.mean([r.final_cash_inr for r in res])
         fcf = statistics.mean([r.free_cash_flow_inr for r in res])
         cash_ret = statistics.mean([r.cash_retained_pct for r in res])
+        tok_vals = [r.total_tokens for r in res if r.total_tokens is not None]
+        cost_vals = [r.est_cost_usd for r in res if r.est_cost_usd is not None]
+        tok_str = f"{statistics.mean(tok_vals):,.0f}" if tok_vals else "-"
+        cost_str = f"${statistics.mean(cost_vals):.3f}" if cost_vals else "-"
         print(
             f"{name:<20} {len(res):>3}  "
             f"{mean_r:+7.3f} ± {sd_r:5.3f}    "
@@ -173,5 +198,6 @@ def summarise(results_by_policy: Dict[str, List[EpisodeResult]]) -> None:
             f"{start_cash/1e7:+10.1f}  "
             f"{final_cash/1e7:+10.1f}  "
             f"{fcf/1e7:+10.1f}  "
-            f"{cash_ret:8.1f}"
+            f"{cash_ret:8.1f}  "
+            f"{tok_str:>10}  {cost_str:>8}"
         )

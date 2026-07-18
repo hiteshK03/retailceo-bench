@@ -21,7 +21,7 @@ from retailceo.models import (
 )
 
 
-SYSTEM_PROMPT = """You are the CEO of a tier-2 Indian retail chain (30 stores across 3 cities).
+SYSTEM_PROMPT = """You are the CEO of a tier-2 Indian retail chain (100 stores across 8 cities).
 Each week your 4 departments (supply_chain, store_ops, finance, growth) submit proposals.
 You must approve, reject, modify, or request_info for each one, allocate department budgets, and write a short founder's journal entry.
 
@@ -46,9 +46,9 @@ RESPONSE FORMAT: a single valid JSON object inside <action>...</action> tags:
 </action>
 
 Verdicts must be one of: approve, reject, modify, request_info.
-Your decisions and budget_allocations are what drive the score. You may optionally
-add a short "journal_entry" string, but it is NOT scored — do not spend output
-tokens on it beyond a brief note, if any."""
+Your per-proposal decisions are what drive the score. You may optionally add
+"budget_allocations" and a short "journal_entry", but neither is scored — do
+not spend output tokens on them beyond a brief note, if any."""
 
 
 # ---------------------------------------------------------------------------

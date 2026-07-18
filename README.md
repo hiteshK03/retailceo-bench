@@ -60,35 +60,38 @@ Full protocol: 10 seeds × 3 difficulties. Reward range is theoretical
 
 | Policy | Easy | Medium | Hard | Avg |
 |--------|------|--------|------|-----|
-| Heuristic (19 rules) | +2.03 | +1.62 | +0.26 | +1.30 |
-| **Claude Sonnet 4** | +1.63 | +1.16 | +0.34 | +1.04 |
-| **Claude Opus 4** | +1.56 | +1.05 | +0.27 | +0.96 |
+| Heuristic (19 rules) | +2.00 | +1.59 | +0.21 | +1.27 |
+| **Claude Sonnet 4** | _re-run pending_ | | | |
+| **Claude Opus 4** | _re-run pending_ | | | |
 | All-Approve | +1.85 | +1.13 | -0.54 | +0.81 |
-| Random | +0.31 | -0.29 | -1.41 | -0.46 |
+| Random | +0.22 | -0.36 | -1.48 | -0.54 |
 
-> Frontier models currently **underperform the hand-crafted Heuristic
-> baseline** — closing this gap is the benchmark's core challenge.
+> Baselines refreshed under the corrected reward (10 seeds × 3 difficulties).
+> Frontier rows are pending re-run under the same reward. Frontier models
+> previously **underperformed the hand-crafted Heuristic baseline** — closing
+> that gap is the benchmark's core challenge.
 
 <details>
 <summary>Extended metrics (click to expand)</summary>
 
 | Policy | Difficulty | Reward | EBITDA% | Stockout% | NPS | FCF (Cr) |
 |--------|-----------|--------|---------|-----------|-----|----------|
-| Heuristic | Easy | +2.03 | +10.37 | 1.8 | 34.4 | +37.4 |
-| Heuristic | Medium | +1.62 | +5.82 | 0.9 | 34.1 | +36.1 |
-| Heuristic | Hard | +0.26 | +0.99 | 1.2 | 32.7 | +27.6 |
-| Sonnet 4 | Easy | +1.63 | +8.95 | 5.6 | 30.6 | +21.4 |
-| Sonnet 4 | Medium | +1.16 | +4.55 | 4.5 | 30.8 | +19.8 |
-| Sonnet 4 | Hard | +0.34 | +0.18 | 2.2 | 32.9 | +12.5 |
-| Opus 4 | Easy | +1.56 | +8.72 | 9.0 | 28.6 | +22.7 |
-| Opus 4 | Medium | +1.05 | +4.11 | 6.7 | 29.5 | +19.5 |
-| Opus 4 | Hard | +0.27 | +0.15 | 2.7 | 32.3 | +17.1 |
+| Heuristic | Easy | +2.00 | +10.37 | 1.8 | 34.4 | +37.4 |
+| Heuristic | Medium | +1.59 | +5.82 | 0.9 | 34.1 | +36.1 |
+| Heuristic | Hard | +0.21 | +0.99 | 1.2 | 32.7 | +27.6 |
+| All-Approve | Easy | +1.85 | +3.58 | 3.3 | 33.9 | +44.2 |
+| All-Approve | Medium | +1.13 | -0.73 | 2.7 | 33.3 | +37.6 |
+| All-Approve | Hard | -0.54 | -15.52 | 3.1 | 32.8 | +19.7 |
+| Random | Easy | +0.22 | +1.50 | 17.6 | 15.3 | +40.1 |
+| Random | Medium | -0.36 | -2.26 | 18.0 | 16.6 | +39.1 |
+| Random | Hard | -1.48 | -12.44 | 15.1 | 19.1 | +27.5 |
 
 </details>
 
-> **Note:** the leaderboard above predates the reward-integrity fixes described
-> in [Reward](#reward) (activated false-reject penalty). Numbers will be
-> refreshed; re-runs are welcome as PRs.
+> Baselines above are refreshed under the corrected reward (see
+> [Reward](#reward)) and are reproducible with
+> `python -m eval.cli baselines --protocol full`. Frontier-model rows are
+> pending re-run under the same reward; re-runs are welcome as PRs.
 
 ---
 

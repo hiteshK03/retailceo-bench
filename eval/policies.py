@@ -32,6 +32,19 @@ class CEOPolicy:
     ) -> CEOAction:
         raise NotImplementedError
 
+    def token_usage(self) -> Optional[Dict[str, int]]:
+        """Cumulative token counters, or None if this policy has no LLM backend.
+
+        Keys (when non-None): total_tokens, prompt_tokens, completion_tokens.
+        """
+        return None
+
+    def estimate_cost_usd(
+        self, prompt_tokens: Optional[int], completion_tokens: Optional[int]
+    ) -> Optional[float]:
+        """Rough USD cost for a token delta; None if pricing is unknown."""
+        return None
+
 
 # ---------------------------------------------------------------------------
 # Random CEO

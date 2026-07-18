@@ -32,10 +32,13 @@ htmlcov/
 *.json
 !pyproject.toml
 
+# Canonical leaderboard results are tracked; scratch/archive under results/ is not.
+!results/*.json
+results/archive_pre_reward_fix/
+
 # OS
 .DS_Store
 Thumbs.db
-run_smoke.py
 
 # --- Retail CEO Office (HF Docker Space) ---
 # Ignore installed node deps + TS build cache, but KEEP the frontend source

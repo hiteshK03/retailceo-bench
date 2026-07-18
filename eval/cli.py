@@ -23,6 +23,7 @@ from .policies import (
     OracleCEO,
 )
 from .runner import EpisodeResult, run_one_episode, run_policy, summarise
+from . import stats as _stats
 
 PROTOCOLS = {
     "lite": {
@@ -118,6 +119,10 @@ def cmd_baselines(args) -> int:
                     "final_cash_inr": r.final_cash_inr,
                     "min_cash_inr": r.min_cash_inr,
                     "free_cash_flow_inr": r.free_cash_flow_inr,
+                    "prompt_tokens": r.prompt_tokens,
+                    "completion_tokens": r.completion_tokens,
+                    "total_tokens": r.total_tokens,
+                    "est_cost_usd": r.est_cost_usd,
                 }
                 for r in res
             ]
@@ -189,6 +194,10 @@ def cmd_frontier(args) -> int:
                     "final_cash_inr": r.final_cash_inr,
                     "min_cash_inr": r.min_cash_inr,
                     "free_cash_flow_inr": r.free_cash_flow_inr,
+                    "prompt_tokens": r.prompt_tokens,
+                    "completion_tokens": r.completion_tokens,
+                    "total_tokens": r.total_tokens,
+                    "est_cost_usd": r.est_cost_usd,
                 }
                 for r in res
             ]
@@ -253,6 +262,89 @@ def cmd_trace(args) -> int:
     return 0
 
 
+def cmd_plot(args) -> int:
+    from .visualize import plot_trace_file
+    try:
+        out = plot_trace_file(args.trace, out_path=args.out, title=args.title)
+    except RuntimeError as e:            # matplotlib missing -> friendly msg
+        print(str(e), file=sys.stderr)
+        return 3
+    except (OSError, ValueError, json.JSONDecodeError) as e:
+        print(f"[plot] error: {e}", file=sys.stderr)
+        return 2
+    print(f"[plot] wrote figure to {out}")
+    return 0
+
+
+def _print_stats(
+    all_results: Dict[str, List[EpisodeResult]],
+    baseline: str | None,
+    resamples: int,
+    ci: float,
+    seed: int,
+) -> None:
+    names = [n for n, res in all_results.items() if res]
+    if not names:
+        return
+    ci_pct = int(round(ci * 100))
+
+    # ---- Per-policy bootstrap CI table ----
+    print(
+        f"\n=== Per-policy reward: bootstrap {ci_pct}% CI "
+        f"({resamples} resamples, seed={seed}) ==="
+    )
+    hdr = f"{'policy':<22} {'n':>3}  {'mean':>9}  {ci_pct}% CI"
+    print(hdr)
+    print("-" * max(len(hdr), 48))
+    for name in names:
+        rewards = [r.total_reward for r in all_results[name]]
+        mean, lo, hi = _stats.bootstrap_ci_mean(
+            rewards, n_resamples=resamples, ci=ci, seed=seed
+        )
+        print(
+            f"{name:<22} {len(rewards):>3}  {mean:+9.3f}  "
+            f"[{lo:+8.3f}, {hi:+8.3f}]"
+        )
+
+    # ---- Pairwise significance vs baseline ----
+    if baseline is None:
+        baseline = "random" if "random" in names else names[0]
+    if baseline not in names:
+        print(f"\n[stats] baseline '{baseline}' not found; skipping matrix.")
+        return
+
+    base_map = {r.seed: r.total_reward for r in all_results[baseline]}
+    print(
+        f"\n=== Pairwise vs '{baseline}': paired bootstrap "
+        f"(two-sided p, {resamples} resamples, seed={seed}) ==="
+    )
+    hdr2 = (
+        f"{'policy':<22} {'pairs':>5}  {'d_mean':>9}  "
+        f"{ci_pct}% CI(d){'':<8} {'p':>8}  sig"
+    )
+    print(hdr2)
+    print("-" * max(len(hdr2), 64))
+    for name in names:
+        if name == baseline:
+            continue
+        this_map = {r.seed: r.total_reward for r in all_results[name]}
+        common = sorted(set(base_map) & set(this_map))
+        if len(common) < 2:
+            print(f"{name:<22} {len(common):>5}  (no shared seeds; n/a)")
+            continue
+        a = [this_map[s] for s in common]   # candidate
+        b = [base_map[s] for s in common]   # baseline
+        d, lo, hi, p, npairs = _stats.paired_bootstrap_diff(
+            a, b, n_resamples=resamples, ci=ci, seed=seed
+        )
+        print(
+            f"{name:<22} {npairs:>5}  {d:+9.3f}  "
+            f"[{lo:+7.2f}, {hi:+7.2f}]   {p:8.4f}  {_stats.sig_stars(p)}"
+        )
+    print("\n  d_mean = mean(policy - baseline) per shared seed; "
+          "positive favours the policy.  * p<.05  ** p<.01  *** p<.001")
+
+
 def cmd_compare(args) -> int:
     all_results: Dict[str, List[EpisodeResult]] = {}
     for path in args.results:
@@ -274,6 +366,10 @@ def cmd_compare(args) -> int:
                         min_cash_inr=e.get("min_cash_inr", 0),
                         avg_stockout_pct=e.get("avg_stockout_pct", 0),
                         avg_nps=e.get("avg_nps", 0),
+                        prompt_tokens=e.get("prompt_tokens"),
+                        completion_tokens=e.get("completion_tokens"),
+                        total_tokens=e.get("total_tokens"),
+                        est_cost_usd=e.get("est_cost_usd"),
                     )
                     for e in entries
                 )
@@ -298,6 +394,15 @@ def cmd_compare(args) -> int:
             ]
 
     summarise(all_results)
+
+    if not getattr(args, "no_stats", False):
+        _print_stats(
+            all_results,
+            baseline=getattr(args, "baseline", None),
+            resamples=getattr(args, "resamples", _stats.DEFAULT_RESAMPLES),
+            ci=getattr(args, "ci", 0.95),
+            seed=getattr(args, "stat_seed", _stats.DEFAULT_SEED),
+        )
     return 0
 
 
@@ -358,6 +463,25 @@ def main() -> int:
     # compare
     cp = sub.add_parser("compare", help="Compare result files")
     cp.add_argument("results", nargs="+", help="JSON result files to compare")
+    cp.add_argument("--baseline", type=str, default=None,
+                    help="Policy name to test others against "
+                         "(default: 'random' if present, else first policy)")
+    cp.add_argument("--resamples", type=int, default=_stats.DEFAULT_RESAMPLES,
+                    help="Bootstrap resamples (default 10000)")
+    cp.add_argument("--ci", type=float, default=0.95,
+                    help="Confidence level for intervals (default 0.95)")
+    cp.add_argument("--stat-seed", type=int, default=_stats.DEFAULT_SEED,
+                    help="RNG seed for the bootstrap (reproducibility)")
+    cp.add_argument("--no-stats", action="store_true",
+                    help="Only print the summarise() table, skip CI/significance")
+
+    # plot
+    pp = sub.add_parser("plot", help="Render KPI/reward/EBITDA charts from a trace JSON")
+    pp.add_argument("trace", help="Trace JSON file written by the 'trace' command")
+    pp.add_argument("--out", type=str, default=None,
+                    help="Output PNG path (default: <trace>.png)")
+    pp.add_argument("--title", type=str, default=None,
+                    help="Override figure title")
 
     args = parser.parse_args()
 
@@ -369,6 +493,8 @@ def main() -> int:
         return cmd_trace(args)
     elif args.command == "compare":
         return cmd_compare(args)
+    elif args.command == "plot":
+        return cmd_plot(args)
     else:
         parser.print_help()
         return 1
