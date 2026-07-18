@@ -19,6 +19,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from .interactive import play_interactive
 from .runner import stream_run
 from .schemas import RunConfig, RunCreated, RunState
 
@@ -109,6 +110,38 @@ async def stream_run_socket(websocket: WebSocket, run_id: str) -> None:
                 "error": type(exc).__name__,
                 "message": str(exc),
             },
+        }
+        record.append(event)
+        try:
+            await websocket.send_json(event)
+        except Exception:
+            pass
+
+
+@app.websocket("/api/human/{run_id}/play")
+async def human_play_socket(websocket: WebSocket, run_id: str) -> None:
+    record = RUNS.get(run_id)
+    if record is None or record.config.mode != "human":
+        await websocket.close(code=4404)
+        return
+    await websocket.accept()
+
+    async def emit(event: Dict[str, Any]) -> None:
+        record.append(event)
+        await websocket.send_json(event)
+
+    async def recv_decisions() -> Dict[str, Any]:
+        return await websocket.receive_json()
+
+    try:
+        await play_interactive(run_id, record.config, recv_decisions, emit)
+    except WebSocketDisconnect:
+        return
+    except Exception as exc:  # noqa: BLE001 - surface any run failure to the UI
+        event = {
+            "type": "run_failed",
+            "run_id": run_id,
+            "payload": {"error": type(exc).__name__, "message": str(exc)},
         }
         record.append(event)
         try:

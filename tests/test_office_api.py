@@ -101,3 +101,29 @@ def test_human_week_decisions_model():
     msg = HumanWeekDecisions(week=1, decisions=[{"proposal_id": "S-1", "verdict": "approve"}])
     assert msg.week == 1 and msg.decisions[0]["verdict"] == "approve"
     assert msg.journal == ""
+
+
+def test_human_play_websocket_full_episode():
+    from fastapi.testclient import TestClient
+    from office_api.app import app
+
+    client = TestClient(app)
+    r = client.post("/api/runs", json={"mode": "human", "seed": 44,
+                                       "difficulty": "easy", "weeks": 4})
+    run_id = r.json()["run_id"]
+
+    with client.websocket_connect(f"/api/human/{run_id}/play") as ws:
+        completed = None
+        while True:
+            ev = ws.receive_json()
+            if ev["type"] == "week_started":
+                ws.send_json({"week": ev["payload"]["week"],
+                              "decisions": [{"proposal_id": p["proposal_id"], "verdict": "approve"}
+                                            for p in ev["payload"]["inbox"]]})
+            elif ev["type"] == "run_completed":
+                completed = ev
+                break
+            elif ev["type"] == "run_failed":
+                raise AssertionError(ev["payload"])
+        assert completed["payload"]["summary"]["total_reward"] is not None
+        assert "recording_path" in completed["payload"]
