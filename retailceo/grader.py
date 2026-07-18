@@ -207,6 +207,7 @@ def weekly_reward(
         "kpi_delta":         kpi_delta_score(kpi_snapshot),
         "stockout":          stockout_penalty(kpi_snapshot),
         "cash_pressure":     cash_pressure_penalty(kpi_snapshot),
+        "false_reject":      false_reject_penalty(decisions, inbox),
     }
     if cash_this_week is not None and cash_last_week is not None:
         raw["fcf"] = free_cash_flow_score(cash_this_week, cash_last_week)
@@ -219,6 +220,7 @@ def weekly_reward(
         "fcf":               w["weekly_fcf"]       * raw["fcf"],
         "stockout":          w["stockout"]          * raw["stockout"],
         "cash_pressure":     w["cash_pressure"]     * raw["cash_pressure"],
+        "false_reject":      w["false_reject"]      * raw["false_reject"],
     }
 
     total = sum(weighted.values())

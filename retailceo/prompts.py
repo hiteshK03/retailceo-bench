@@ -41,12 +41,14 @@ RESPONSE FORMAT: a single valid JSON object inside <action>...</action> tags:
     {"proposal_id": "G01-02", "verdict": "approve", "reasoning": "campaign ROI is strong during festival week"},
     {"proposal_id": "G01-04", "verdict": "reject", "reasoning": "deep discount would destroy margin while cash is tight"}
   ],
-  "budget_allocations": {"supply_chain": 10000000, "store_ops": 2000000, "finance": 1000000, "growth": 2000000},
-  "journal_entry": "Week 1: trimmed PO quantities to preserve working capital; approved festival campaign for demand uplift; cash 25 Cr, NPS 37."
+  "budget_allocations": {"supply_chain": 10000000, "store_ops": 2000000, "finance": 1000000, "growth": 2000000}
 }
 </action>
 
-Verdicts must be one of: approve, reject, modify, request_info."""
+Verdicts must be one of: approve, reject, modify, request_info.
+Your decisions and budget_allocations are what drive the score. You may optionally
+add a short "journal_entry" string, but it is NOT scored — do not spend output
+tokens on it beyond a brief note, if any."""
 
 
 # ---------------------------------------------------------------------------
@@ -234,10 +236,6 @@ def render_observation(
         comp_lines = "; ".join(e.description for e in obs.competitor_events[-4:])
         parts.append(f"Recent competitor signals: {comp_lines}")
 
-    if obs.last_journal:
-        # Compress the prior-week journal to ~60 words to save prompt budget
-        # while preserving enough nouns for journal-coherence continuity.
-        parts.append(f"Prior-week journal (excerpt): {_compress_journal(obs.last_journal, max_words=60)}")
     parts.append(f"\nINBOX ({len(obs.inbox)} proposals):\n{render_inbox(obs.inbox)}")
     parts.append(
         "\nReturn your weekly decision as a single JSON object wrapped in <action>...</action> tags."
@@ -247,7 +245,8 @@ def render_observation(
             f"HARD BUDGET: the environment will truncate your response after "
             f"{token_budget} output tokens -- if the closing </action> tag is missing, "
             f"your action is treated as malformed and the environment falls back to "
-            f"approve-all (cash and stockouts can drift). Skip preamble/analysis; emit JSON only."
+            f"request_info for every proposal (a no-op; missed upside). "
+            f"Skip preamble/analysis; emit JSON only."
         )
     return "\n\n".join(parts)
 
@@ -341,27 +340,6 @@ def parse_journal_response(text: str) -> str:
 # ---------------------------------------------------------------------------
 # Response -> CEOAction
 # ---------------------------------------------------------------------------
-
-def _compress_journal(text: str, max_words: int = 60) -> str:
-    """Return a shortened view of the previous week's journal.
-
-    Takes the first ``max_words`` words -- short enough to fit the CEO's token
-    budget, long enough to retain the noun-overlap the grader uses for
-    continuity scoring.  Any proposal IDs in the original text are preserved
-    by pulling them forward into the excerpt.
-    """
-    if not text:
-        return ""
-    words = text.split()
-    if len(words) <= max_words:
-        return text
-    head = " ".join(words[:max_words])
-    pids = re.findall(r"\b[A-Z]{1,4}\d{1,2}-\d{1,2}\b", text)
-    if pids:
-        pids_seen = list(dict.fromkeys(pids))[:3]
-        head += f"  [refs: {', '.join(pids_seen)}]"
-    return head + " ..."
-
 
 _ACTION_RE = re.compile(r"<action>\s*(\{.*?\})\s*</action>", re.DOTALL)
 _ACTION_OPEN_RE = re.compile(r"<action>\s*(\{.*)", re.DOTALL)

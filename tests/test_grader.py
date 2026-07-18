@@ -188,6 +188,30 @@ class TestWeeklyReward:
         assert "weighted.kpi_delta" in components
         assert "weighted.stockout" in components
         assert "weighted.cash_pressure" in components
+        assert "weighted.false_reject" in components
+
+    def test_false_reject_penalizes_high_urgency_rejects(self):
+        """Rejecting high-urgency proposals must lower reward vs approving them."""
+        inbox = [
+            Proposal(proposal_id="S-1", dept="supply_chain", action="po.place", urgency="high"),
+            Proposal(proposal_id="S-2", dept="supply_chain", action="po.place", urgency="high"),
+        ]
+        approve = [ProposalDecision(proposal_id=p.proposal_id, verdict="approve") for p in inbox]
+        reject = [ProposalDecision(proposal_id=p.proposal_id, verdict="reject") for p in inbox]
+        r_approve, _ = weekly_reward(_baseline_kpi(), approve, inbox, "")
+        r_reject, comp = weekly_reward(_baseline_kpi(), reject, inbox, "")
+        assert r_reject < r_approve
+        assert comp["raw.false_reject"] > 0.0
+
+    def test_false_reject_ignores_low_urgency(self):
+        """Low-urgency rejects (typical of self-serving padding) barely penalized."""
+        inbox = [
+            Proposal(proposal_id="G-1", dept="growth", action="discount.run", urgency="low")
+            for _ in range(1)
+        ]
+        reject = [ProposalDecision(proposal_id="G-1", verdict="reject")]
+        _, comp = weekly_reward(_baseline_kpi(), reject, inbox, "")
+        assert comp["raw.false_reject"] <= 0.1
 
 
 class TestTerminalReward:
@@ -237,4 +261,4 @@ class TestRewardBounds:
             assert -6.0 <= total <= 5.0, f"Total reward {total} out of bounds (seed={seed})"
 
 
-from retailceo.models import CEOAction, ProposalDecision
+from retailceo.models import CEOAction, Proposal, ProposalDecision

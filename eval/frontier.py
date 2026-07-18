@@ -30,6 +30,7 @@ class FrontierCEO(CEOPolicy):
         max_tokens: Optional[int] = None,
         temperature: float = 0.0,
         max_retries: int = 3,
+        parse_retries: int = 0,
         request_timeout_s: float = 90.0,
         dual_head: bool = False,
         action_max_tokens: int = 1024,
@@ -62,6 +63,7 @@ class FrontierCEO(CEOPolicy):
         self._max_tokens = max_tokens
         self._temperature = temperature
         self._max_retries = max_retries
+        self._parse_retries = parse_retries
         self._dual_head = dual_head
         self._action_max_tokens = action_max_tokens
         self._journal_max_tokens = journal_max_tokens
@@ -160,7 +162,9 @@ class FrontierCEO(CEOPolicy):
         completion = self._call(messages, max_tokens=self._max_tokens)
         action, tel = parse_response(completion, obs.inbox)
         if not tel["parse_ok"] and not tel["parse_partial"]:
-            action, tel = self._retry_parse(messages, completion, obs, tel)
+            self.n_parse_errors += 1
+            if self._parse_retries > 0:
+                action, tel = self._retry_parse(messages, completion, obs, tel)
         return action
 
     def _retry_parse(self, messages, bad_completion, obs, orig_tel):
@@ -176,9 +180,6 @@ class FrontierCEO(CEOPolicy):
         )
         completion2 = self._call(retry_messages, max_tokens=self._max_tokens)
         action2, tel2 = parse_response(completion2, obs.inbox)
-        if tel2["parse_ok"] or tel2["parse_partial"]:
-            return action2, tel2
-        self.n_parse_errors += 1
         return action2, tel2
 
     def _act_dual(self, obs, week=0):
@@ -200,20 +201,20 @@ class FrontierCEO(CEOPolicy):
         act_text = self._call(act_messages, max_tokens=self._action_max_tokens)
         action, tel = parse_response(act_text, obs.inbox)
         if not tel["parse_ok"] and not tel["parse_partial"]:
-            retry_messages = act_messages + [
-                {"role": "assistant", "content": act_text},
-                {"role": "user", "content": self.RETRY_PROMPT},
-            ]
-            print(
-                f"[{self.name}] dual-head parse failed ({tel.get('parse_error', '?')}), retrying…",
-                file=sys.stderr,
-            )
-            act_text2 = self._call(retry_messages, max_tokens=self._action_max_tokens)
-            action2, tel2 = parse_response(act_text2, obs.inbox)
-            if tel2["parse_ok"] or tel2["parse_partial"]:
-                action, tel = action2, tel2
-            else:
-                self.n_parse_errors += 1
+            self.n_parse_errors += 1
+            if self._parse_retries > 0:
+                retry_messages = act_messages + [
+                    {"role": "assistant", "content": act_text},
+                    {"role": "user", "content": self.RETRY_PROMPT},
+                ]
+                print(
+                    f"[{self.name}] dual-head parse failed ({tel.get('parse_error', '?')}), retrying…",
+                    file=sys.stderr,
+                )
+                act_text2 = self._call(retry_messages, max_tokens=self._action_max_tokens)
+                action2, tel2 = parse_response(act_text2, obs.inbox)
+                if tel2["parse_ok"] or tel2["parse_partial"]:
+                    action, tel = action2, tel2
 
         jrn_messages = build_journal_chat(
             obs, action.decisions, action.budget_allocations,

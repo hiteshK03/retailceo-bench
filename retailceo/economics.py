@@ -255,6 +255,7 @@ REWARD_WEIGHTS: Dict[str, float] = {
     "quarterly_pnl":      0.70,
     "stockout":          -0.05,
     "cash_pressure":     -0.05,
+    "false_reject":      -0.05,
     "cash_floor":        -0.40,
 }
 

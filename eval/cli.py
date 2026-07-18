@@ -142,6 +142,7 @@ def cmd_frontier(args) -> int:
         extra_headers=_parse_extra_headers() or None,
         temperature=args.temperature,
         max_tokens=args.max_tokens,
+        parse_retries=args.parse_retries,
         dual_head=args.dual_head,
         permissive=args.permissive,
     )
@@ -219,6 +220,7 @@ def cmd_trace(args) -> int:
             api_base=args.api_base,
             extra_headers=_parse_extra_headers() or None,
             temperature=args.temperature,
+            parse_retries=getattr(args, "parse_retries", 0),
         )
     elif args.policy in policy_map:
         policy = policy_map[args.policy]()
@@ -330,7 +332,11 @@ def main() -> int:
     fp.add_argument("--provider", default="auto", choices=["auto", "anthropic", "openai"])
     fp.add_argument("--api-base", type=str, default=None)
     fp.add_argument("--temperature", type=float, default=0.0)
-    fp.add_argument("--max-tokens", type=int, default=600)
+    fp.add_argument("--max-tokens", type=int, default=4096)
+    fp.add_argument("--parse-retries", type=int, default=0,
+                     help="Re-prompt attempts on unparseable output. "
+                          "Default 0 = official protocol (no retries; fall back to "
+                          "request_info). Set >0 only for exploratory runs.")
     fp.add_argument("--dual-head", action="store_true")
     fp.add_argument("--permissive", action="store_true")
     fp.add_argument("--seeds", type=int, nargs="+", default=None)
