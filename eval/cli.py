@@ -276,6 +276,25 @@ def cmd_plot(args) -> int:
     return 0
 
 
+def cmd_human_baseline(args) -> int:
+    from .human_baseline import aggregate, write_baseline
+    agg = aggregate(results_dir=args.dir)
+    if not agg:
+        print(f"[human-baseline] no recordings found in {args.dir}")
+        return 0
+    print(f"\n=== Human baseline ({args.dir}) ===")
+    print(f"{'difficulty':<10} {'n':>4} {'mean':>9}  95% CI")
+    print("-" * 44)
+    for diff in ("easy", "medium", "hard"):
+        if diff in agg:
+            a = agg[diff]
+            print(f"{diff:<10} {a['n']:>4} {a['mean']:+9.3f}  "
+                  f"[{a['ci_lo']:+.3f}, {a['ci_hi']:+.3f}]")
+    out = write_baseline(agg, out=args.out)
+    print(f"\nWrote {out}")
+    return 0
+
+
 def _print_stats(
     all_results: Dict[str, List[EpisodeResult]],
     baseline: str | None,
@@ -483,6 +502,11 @@ def main() -> int:
     pp.add_argument("--title", type=str, default=None,
                     help="Override figure title")
 
+    # human-baseline
+    hb = sub.add_parser("human-baseline", help="Aggregate results/human/*.json into a baseline")
+    hb.add_argument("--dir", type=str, default="results/human")
+    hb.add_argument("--out", type=str, default="results/human_baseline.json")
+
     args = parser.parse_args()
 
     if args.command == "baselines":
@@ -495,6 +519,8 @@ def main() -> int:
         return cmd_compare(args)
     elif args.command == "plot":
         return cmd_plot(args)
+    elif args.command == "human-baseline":
+        return cmd_human_baseline(args)
     else:
         parser.print_help()
         return 1
