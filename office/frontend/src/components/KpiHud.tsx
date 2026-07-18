@@ -7,28 +7,26 @@ type Props = {
   status: string;
 };
 
-export function KpiHud({ week, maxWeeks = 12, status }: Props) {
+export function KpiHud({ week, status }: Props) {
   const kpi = week?.kpi ?? {};
-  const pnl = week?.pnl_qtd ?? {};
   const decisionKpi = week?.decision_kpi;
   return (
     <section className="kpi-hud panel pixel-border">
       <div className="hud-topline">
-        <span>Week {week?.week ?? "-"}/{maxWeeks}</span>
+        <span>Decision Snapshot</span>
         <span className={`run-status ${status}`}>{status}</span>
       </div>
       <div className="snapshot-note">
         {week?.decisions
-          ? "Post-close KPIs; CEO saw the decision snapshot."
+          ? "What the CEO saw at decision time. Headline live KPIs are in the top bar."
           : "Decision-time snapshot before this week's actions close."}
       </div>
       <div className="hud-grid">
-        <Metric label="EBITDA" value={`${formatNumber(pnl.ebitda_margin_pct, 2)}%`} tone="good" />
-        <Metric label="Stockout" value={`${formatNumber(kpi.stockout_rate_pct, 1)}%`} tone="bad" />
-        <Metric label="NPS" value={formatNumber(kpi.nps, 1)} tone="info" />
-        <Metric label="Cash close" value={formatInr(kpi.cash_inr ?? week?.cash_inr)} tone="cash" />
         <Metric label="CEO saw cash" value={formatInr(decisionKpi?.cash_inr ?? kpi.cash_inr)} tone="cash" />
-        <Metric label="Reward" value={formatNumber(week?.reward, 3)} tone="reward" />
+        <Metric label="CEO saw NPS" value={formatNumber(decisionKpi?.nps, 1)} tone="info" />
+        <Metric label="CEO saw stockout" value={`${formatNumber(decisionKpi?.stockout_rate_pct, 1)}%`} tone="bad" />
+        <Metric label="Gross margin" value={`${formatNumber(kpi.gross_margin_pct, 1)}%`} tone="good" />
+        <Metric label="SLA hit rate" value={`${formatNumber(kpi.delivery_sla_hit_rate_pct, 1)}%`} tone="info" />
         <Metric label="Crises" value={(week?.active_crises ?? []).join(", ") || "none"} tone="warn" />
       </div>
     </section>

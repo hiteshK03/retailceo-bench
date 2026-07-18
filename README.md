@@ -2,6 +2,12 @@
 
 [![CI](https://github.com/hiteshK03/retailceo-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/hiteshK03/retailceo-bench/actions/workflows/ci.yml)
 
+<p align="center">
+  <img src="assets/office.png" alt="Retail CEO Office — live simulation dashboard with top KPI bar (EBITDA, Revenue, Cash, Stock-out, NPS) above the pixel office" width="900">
+</p>
+
+<p align="center"><em>The live &quot;Pixel CEO Office&quot; dashboard — a scripted <code>RetailCEOEnv</code> episode streaming weekly KPIs, department proposals, and live CEO decisions.</em></p>
+
 > **🏪 Live "Pixel CEO Office" demo (Hugging Face Docker Space).** This repo doubles as a
 > CPU-only, key-free Hugging Face Space that streams a live `RetailCEOEnv` episode driven by a
 > scripted policy into a React + PixiJS dashboard. The backend lives in
@@ -320,6 +326,12 @@ python -m eval.cli frontier --model <model> --protocol full
 This repo also ships a **live, CPU-only, key-free dashboard** — the "Pixel CEO Office" —
 packaged as a Hugging Face **Docker** Space (`sdk: docker`, `app_port: 7860`). It streams
 a real `RetailCEOEnv` episode driven by a scripted policy into a React 19 + PixiJS 8 SPA.
+
+<p align="center">
+  <img src="assets/office-kpis.png" alt="Top KPI bar — Week of 12 showing EBITDA, Revenue, Cash, Stock-out, NPS, and weekly Reward, each with week-over-week deltas" width="860">
+</p>
+
+<p align="center"><em>The full-width top KPI bar: quarter-to-date EBITDA &amp; revenue, cash, stock-out rate, NPS, and weekly reward — each with ▲/▼ week-over-week deltas.</em></p>
 
 - **Backend:** [`office_api/`](./office_api/) — single-process FastAPI. Instantiates
   `RetailCEOEnv`, runs a scripted `.act()` → `env.step()` loop over the configured weeks,

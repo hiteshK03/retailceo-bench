@@ -34,6 +34,13 @@ export type KpiSnapshot = {
   nps?: number;
   cash_inr?: number;
   delivery_sla_hit_rate_pct?: number;
+  revenue_delta_pct?: number;
+  margin_delta_pts?: number;
+  stockout_delta_pts?: number;
+  nps_delta?: number;
+  sla_delta_pts?: number;
+  cash_delta_inr?: number;
+  cash_runway_weeks?: number | null;
 };
 
 export type PnlSnapshot = {

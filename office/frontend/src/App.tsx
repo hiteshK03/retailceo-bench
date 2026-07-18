@@ -7,6 +7,7 @@ import { KpiHud } from "./components/KpiHud";
 import { OfficeCanvas } from "./components/OfficeCanvas";
 import { ProposalPanel } from "./components/ProposalPanel";
 import { RunControls } from "./components/RunControls";
+import { TopKpiBar } from "./components/TopKpiBar";
 import "./styles/app.css";
 
 const DEFAULT_CONFIG: RunConfig = {
@@ -23,6 +24,7 @@ export function App() {
   const [statusMessage, setStatusMessage] = useState("Waiting for the CEO.");
   const [maxWeeks, setMaxWeeks] = useState(12);
   const [currentWeek, setCurrentWeek] = useState<WeekPayload | undefined>();
+  const [cumulativeReward, setCumulativeReward] = useState(0);
   const [summary, setSummary] = useState<Record<string, unknown> | undefined>();
   const [playbackDelayMs, setPlaybackDelayMs] = useState(750);
   const [manualReview, setManualReview] = useState(true);
@@ -63,6 +65,7 @@ export function App() {
     clearPlaybackQueue();
     setEvents([]);
     setCurrentWeek(undefined);
+    setCumulativeReward(0);
     setSummary(undefined);
     setStatus("created");
     setStatusMessage("Creating live run...");
@@ -151,8 +154,12 @@ export function App() {
       setStatusMessage(`CEO decision complete${suffix}.`);
     }
     if (event.type === "week_completed") {
-      setCurrentWeek(event.payload as unknown as WeekPayload);
-      setStatusMessage(`Week ${(event.payload as WeekPayload).week} closed. Journal posted.`);
+      const payload = event.payload as unknown as WeekPayload;
+      setCurrentWeek(payload);
+      if (typeof payload.reward === "number") {
+        setCumulativeReward((prev) => prev + (payload.reward ?? 0));
+      }
+      setStatusMessage(`Week ${payload.week} closed. Journal posted.`);
     }
     if (event.type === "run_completed") {
       setStatus("completed");
@@ -187,6 +194,12 @@ export function App() {
           <ProposalPanel week={currentWeek} />
         </div>
         <div className="office-stage">
+          <TopKpiBar
+            week={currentWeek}
+            maxWeeks={maxWeeks}
+            status={status}
+            cumulativeReward={cumulativeReward}
+          />
           <OfficeCanvas week={currentWeek} statusMessage={statusMessage} />
         </div>
         <div className="right-rail">
