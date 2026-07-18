@@ -36,6 +36,10 @@ htmlcov/
 !results/*.json
 results/archive_pre_reward_fix/
 
+# Human playthrough recordings are local artifacts, not committed.
+results/human/
+!results/human/.gitkeep
+
 # OS
 .DS_Store
 Thumbs.db
