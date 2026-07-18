@@ -441,6 +441,42 @@ See [`office/README.md`](./office/README.md) for the frontend workflow.
 
 ---
 
+## Human Play
+
+The Office can be **played by a human** to establish a human baseline. Launch
+the server and open it in a browser:
+
+```bash
+python -m uvicorn office_api.app:app --host 0.0.0.0 --port 7860
+# open http://localhost:7860 → "Play as CEO"
+```
+
+Enter an optional handle and pick a difficulty; the seed is drawn from the
+official eval set (42–51) and shown, so a human playthrough slots directly into
+the per-difficulty protocol. Each week, choose Approve / Reject / Info — or
+Modify a PO quantity — for every proposal, then **Submit Week**. At the end you
+see your reward, KPIs, and how you rank against the heuristic and oracle on that
+seed.
+
+Under the hood this is a turn-taking bidirectional WebSocket
+(`/api/human/{run_id}/play`, `mode="human"` on the run config); the server
+holds the env between weeks and steps it on each submission, scoring with the
+exact benchmark reward.
+
+Every completed playthrough is recorded to `results/human/*.json` — the same
+format as `eval.cli trace`, so it also works with `eval.cli plot`. Aggregate a
+human baseline across all recordings:
+
+```bash
+python -m eval.cli human-baseline
+```
+
+which prints a per-difficulty mean ± bootstrap CI and writes
+`results/human_baseline.json`. Recordings are local artifacts (gitignored); no
+accounts, database, or keys required.
+
+---
+
 ## Glossary
 
 <details>
@@ -474,12 +510,13 @@ reward-integrity fixes (false-reject penalty, journal relaxation).
 reporting · `compare` bootstrap CIs + significance · Oracle is now a true
 ceiling above the heuristic · reward-calibration writeup
 ([docs/CALIBRATION.md](./docs/CALIBRATION.md)) · baselines refreshed under the
-corrected reward, committed under `results/`.
+corrected reward, committed under `results/` · **human-playable Office +
+`human-baseline` aggregation** (see [Human Play](#human-play)).
 
 **Next:**
 - [ ] Leaderboard with more models (GPT-4o/4.1, Gemini 2.5 Pro, Llama, Qwen, open-weight)
 - [ ] Refresh frontier rows under the corrected reward
-- [ ] Human baseline (3–5 players)
+- [ ] Collect human baseline across several players (infra now in place)
 - [ ] Widen the Oracle ceiling (festival campaign timing; hard-difficulty edge is borderline)
 - [ ] Paper / technical report + BibTeX
 

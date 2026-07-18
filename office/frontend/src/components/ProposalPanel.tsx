@@ -1,8 +1,13 @@
 import type { Proposal, ProposalDecision, WeekPayload } from "../types";
 import { decisionsById, formatInr, verdictClass, verdictLabel } from "../lib/format";
 
+export type PendingVerdict = { verdict: string; modified_params?: Record<string, unknown> };
+
 type Props = {
   week?: WeekPayload;
+  interactive?: boolean;
+  pendingVerdicts?: Record<string, PendingVerdict>;
+  onSetVerdict?: (proposalId: string, verdict: string, modified_params?: Record<string, unknown>) => void;
 };
 
 const DEPT_LABELS: Record<string, string> = {
@@ -12,7 +17,7 @@ const DEPT_LABELS: Record<string, string> = {
   growth: "Growth",
 };
 
-export function ProposalPanel({ week }: Props) {
+export function ProposalPanel({ week, interactive, pendingVerdicts, onSetVerdict }: Props) {
   const decisions = decisionsById(week?.decisions);
   const grouped = groupByDept(week?.inbox ?? []);
   const departments = Object.keys(grouped).sort((a, b) => a.localeCompare(b));
@@ -31,6 +36,9 @@ export function ProposalPanel({ week }: Props) {
                 key={proposal.proposal_id}
                 proposal={proposal}
                 decision={decisions[proposal.proposal_id]}
+                interactive={interactive}
+                pending={pendingVerdicts?.[proposal.proposal_id]}
+                onSetVerdict={onSetVerdict}
               />
             ))}
           </section>
@@ -43,15 +51,22 @@ export function ProposalPanel({ week }: Props) {
 function ProposalCard({
   proposal,
   decision,
+  interactive,
+  pending,
+  onSetVerdict,
 }: {
   proposal: Proposal;
   decision?: ProposalDecision;
+  interactive?: boolean;
+  pending?: PendingVerdict;
+  onSetVerdict?: (proposalId: string, verdict: string, modified_params?: Record<string, unknown>) => void;
 }) {
-  const verdict = decision?.verdict;
+  const verdict = interactive ? pending?.verdict : decision?.verdict;
   const params = Object.entries(proposal.params ?? {})
     .filter(([, value]) => value !== null && value !== "" && value !== undefined)
     .slice(0, 3)
     .map(([key, value]) => `${key}: ${String(value)}`);
+  const isPo = proposal.action === "po.place" || proposal.action === "po.bulk_deal";
 
   return (
     <article className={`proposal-card ${verdictClass(verdict)} ${proposal.urgency}`}>
@@ -65,9 +80,35 @@ function ProposalCard({
       </div>
       <p>{proposal.reasoning}</p>
       {params.length > 0 && <code>{params.join(" | ")}</code>}
-      <div className="verdict-row">
-        <span className={`verdict-pill ${verdictClass(verdict)}`}>{verdictLabel(verdict)}</span>
-      </div>
+      {interactive && onSetVerdict ? (
+        <div className="verdict-actions">
+          {(["approve", "reject", "request_info"] as const).map((v) => (
+            <button
+              key={v}
+              className={`verdict-btn ${pending?.verdict === v ? "active" : ""}`}
+              onClick={() => onSetVerdict(proposal.proposal_id, v)}
+            >
+              {v === "request_info" ? "Info" : v[0].toUpperCase() + v.slice(1)}
+            </button>
+          ))}
+          {isPo && (
+            <label className="modify-qty">
+              qty
+              <input
+                type="number"
+                defaultValue={Number(proposal.params?.qty ?? 0)}
+                onChange={(e) =>
+                  onSetVerdict(proposal.proposal_id, "modify", { qty: Number(e.target.value) })
+                }
+              />
+            </label>
+          )}
+        </div>
+      ) : (
+        <div className="verdict-row">
+          <span className={`verdict-pill ${verdictClass(verdict)}`}>{verdictLabel(verdict)}</span>
+        </div>
+      )}
       {decision?.reasoning && <small>{decision.reasoning}</small>}
     </article>
   );

@@ -30,3 +30,19 @@ export function openRunStream(runId: string, onEvent: (event: OfficeEvent) => vo
   return socket;
 }
 
+export function openHumanPlay(runId: string, onEvent: (event: OfficeEvent) => void): WebSocket {
+  const socket = new WebSocket(`${wsBase()}/api/human/${runId}/play`);
+  socket.addEventListener("message", (message) => {
+    onEvent(JSON.parse(message.data) as OfficeEvent);
+  });
+  return socket;
+}
+
+export function sendDecisions(
+  socket: WebSocket,
+  week: number,
+  decisions: { proposal_id: string; verdict: string; modified_params?: Record<string, unknown> }[],
+): void {
+  socket.send(JSON.stringify({ week, decisions }));
+}
+

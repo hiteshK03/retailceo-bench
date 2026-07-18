@@ -73,6 +73,8 @@ export type RunConfig = {
   policy: PolicyKind;
   difficulty: Difficulty;
   weeks: number;
+  mode?: "auto" | "human";
+  player_handle?: string;
 };
 
 export type OfficeEvent = {
