@@ -1,0 +1,12 @@
+**/__pycache__/
+**/*.py[cod]
+*.egg-info/
+.git/
+.github/
+.pytest_cache/
+.venv/
+venv/
+office/frontend/node_modules/
+office/frontend/*.tsbuildinfo
+notebooks/
+*.ipynb

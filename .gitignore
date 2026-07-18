@@ -31,3 +31,12 @@ htmlcov/
 .DS_Store
 Thumbs.db
 run_smoke.py
+
+# --- Retail CEO Office (HF Docker Space) ---
+# Ignore installed node deps + TS build cache, but KEEP the frontend source
+# and the prebuilt production bundle (office/frontend/dist) so the Space can
+# serve the SPA without a Node build stage.
+office/frontend/node_modules/
+office/frontend/*.tsbuildinfo
+!office/frontend/dist/
+!office/frontend/**/*.json

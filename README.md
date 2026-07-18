@@ -1,6 +1,24 @@
+---
+title: Retail CEO Office
+emoji: 🏪
+colorFrom: indigo
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+---
+
 # RetailCEO-Bench
 
 [![CI](https://github.com/hiteshK03/retailceo-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/hiteshK03/retailceo-bench/actions/workflows/ci.yml)
+
+> **🏪 Live "Pixel CEO Office" demo (Hugging Face Docker Space).** This repo doubles as a
+> CPU-only, key-free Hugging Face Space that streams a live `RetailCEOEnv` episode driven by a
+> scripted policy into a React + PixiJS dashboard. The backend lives in
+> [`office_api/`](./office_api/), the frontend in [`office/frontend/`](./office/frontend/)
+> (prebuilt bundle committed under `office/frontend/dist`). Container entry point is the
+> [`Dockerfile`](./Dockerfile). See [Live Office Demo](#live-office-demo) below.
 
 **Can LLMs run a retail chain profitably?**
 
@@ -305,3 +323,39 @@ python -m eval.cli frontier --model <model> --protocol full
 3. **Single-player** — no negotiation, delegation, or multi-agent dynamics
 4. **Simplified economics** — no supply chain lead times, no regional pricing, no competitor counter-moves to CEO actions
 5. **No partial observability** — CEO sees all KPIs with perfect accuracy (no reporting delays or errors)
+
+---
+
+## Live Office Demo
+
+This repo also ships a **live, CPU-only, key-free dashboard** — the "Pixel CEO Office" —
+packaged as a Hugging Face **Docker** Space (`sdk: docker`, `app_port: 7860`). It streams
+a real `RetailCEOEnv` episode driven by a scripted policy into a React 19 + PixiJS 8 SPA.
+
+- **Backend:** [`office_api/`](./office_api/) — single-process FastAPI. Instantiates
+  `RetailCEOEnv`, runs a scripted `.act()` → `env.step()` loop over the configured weeks,
+  and streams UI events over a WebSocket.
+- **Frontend:** [`office/frontend/`](./office/frontend/) — prebuilt bundle committed at
+  `office/frontend/dist` (no Node build stage in the image).
+- **Policies exposed:** `heuristic`, `oracle`, `all_approve`, `random` (scripted only —
+  no frontier API, no trained checkpoint).
+- **Run config:** `{ seed, policy, difficulty (easy|medium|hard), weeks (default 12) }`.
+
+### Run the Office locally
+
+```bash
+pip install -r requirements.txt
+python -m uvicorn office_api.app:app --host 0.0.0.0 --port 7860 \
+  --ws-ping-interval 300 --ws-ping-timeout 300
+# open http://localhost:7860
+```
+
+### API / event shapes
+
+- `GET  /api/health` → `{ "status": "ok" }`
+- `POST /api/runs` with the run config → `{ run_id, status, config }`
+- `GET  /api/runs/{run_id}` → current run state + buffered events
+- `WS   /api/runs/{run_id}/stream` → `run_started` → (`week_started` → `agent_thinking`
+  → `agent_called` → `week_completed`) × weeks → `run_completed` (or `run_failed`)
+
+See [`office/README.md`](./office/README.md) for the full frontend dev/build workflow.
