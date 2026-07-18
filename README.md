@@ -1,14 +1,3 @@
----
-title: Retail CEO Office
-emoji: 🏪
-colorFrom: indigo
-colorTo: green
-sdk: docker
-app_port: 7860
-pinned: false
-license: mit
----
-
 # RetailCEO-Bench
 
 [![CI](https://github.com/hiteshK03/retailceo-bench/actions/workflows/ci.yml/badge.svg)](https://github.com/hiteshK03/retailceo-bench/actions/workflows/ci.yml)
