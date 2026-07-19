@@ -62,17 +62,17 @@ Full protocol: 10 seeds × 3 difficulties. Reward range is theoretical
 |--------|------|--------|------|-----|
 | Oracle (ceiling) | +2.01 | +1.60 | +0.32 | +1.31 |
 | Heuristic (19 rules) | +2.01 | +1.60 | +0.24 | +1.28 |
-| **Claude Sonnet 4** | _re-run pending_ | | | |
-| **Claude Opus 4** | _re-run pending_ | | | |
 | All-Approve | +2.08 | +1.32 | -0.17 | +1.08 |
+| **Claude Opus 4** | +1.59 | +1.10 | +0.27 | +0.99 |
+| **Claude Sonnet 4** | +1.55 | +1.06 | +0.25 | +0.96 |
 | Random | +0.42 | -0.27 | -1.37 | -0.41 |
 
-> Baselines refreshed under the corrected reward (10 seeds × 3 difficulties).
-> Frontier rows are pending re-run under the same reward. Frontier models
-> previously **underperformed the hand-crafted Heuristic baseline** — closing
-> that gap is the benchmark's core challenge. The **Oracle** is now a genuine
-> ceiling above the heuristic (via horizon-aware capex foresight); see
-> [docs/CALIBRATION.md](./docs/CALIBRATION.md) for the reward-design analysis.
+> All rows are under the corrected reward (10 seeds × 3 difficulties). Frontier
+> models still **underperform the hand-crafted Heuristic baseline** — and even
+> All-Approve — so closing that gap is the benchmark's core challenge. The
+> **Oracle** is a genuine ceiling above the heuristic (via horizon-aware capex
+> foresight); see [docs/CALIBRATION.md](./docs/CALIBRATION.md) for the
+> reward-design analysis.
 
 <details>
 <summary>Extended metrics (click to expand)</summary>
@@ -88,16 +88,22 @@ Full protocol: 10 seeds × 3 difficulties. Reward range is theoretical
 | All-Approve | Easy | +2.08 | +7.62 | 4.2 | 33.1 | +49.2 |
 | All-Approve | Medium | +1.32 | +2.78 | 4.5 | 31.7 | +42.0 |
 | All-Approve | Hard | -0.17 | -5.86 | 5.0 | 31.1 | +28.0 |
+| Opus 4 | Easy | +1.59 | +9.67 | 7.7 | 28.6 | +24.2 |
+| Opus 4 | Medium | +1.10 | +4.84 | 6.4 | 29.5 | +20.9 |
+| Opus 4 | Hard | +0.27 | +0.61 | 4.7 | 31.0 | +15.8 |
+| Sonnet 4 | Easy | +1.55 | +9.69 | 7.4 | 28.7 | +21.7 |
+| Sonnet 4 | Medium | +1.06 | +4.67 | 6.7 | 28.8 | +20.3 |
+| Sonnet 4 | Hard | +0.25 | +0.48 | 3.9 | 31.7 | +14.1 |
 | Random | Easy | +0.42 | +4.87 | 19.2 | 14.2 | +45.0 |
 | Random | Medium | -0.27 | -0.83 | 17.6 | 17.3 | +38.0 |
 | Random | Hard | -1.37 | -6.99 | 18.1 | 14.6 | +33.6 |
 
 </details>
 
-> Baselines above are refreshed under the corrected reward (see
-> [Reward](#reward)) and are reproducible with
-> `python -m eval.cli baselines --protocol full`. Frontier-model rows are
-> pending re-run under the same reward; re-runs are welcome as PRs.
+> All rows are under the corrected reward (see [Reward](#reward)). Baselines
+> reproduce with `python -m eval.cli baselines --protocol full`; frontier rows
+> with `python -m eval.cli frontier --model <model> --protocol full`. Adding
+> more models is welcome as PRs.
 
 ---
 
@@ -515,7 +521,7 @@ corrected reward, committed under `results/` · **human-playable Office +
 
 **Next:**
 - [ ] Leaderboard with more models (GPT-4o/4.1, Gemini 2.5 Pro, Llama, Qwen, open-weight)
-- [ ] Refresh frontier rows under the corrected reward
+- [x] Refresh Sonnet 4 / Opus 4 rows under the corrected reward
 - [ ] Collect human baseline across several players (infra now in place)
 - [ ] Widen the Oracle ceiling (festival campaign timing; hard-difficulty edge is borderline)
 - [ ] Paper / technical report + BibTeX
