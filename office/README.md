@@ -34,6 +34,17 @@ npm install
 npm run build        # regenerates office/frontend/dist (committed)
 ```
 
+## Tests
+
+```bash
+cd office/frontend
+npm test             # Vitest + Testing Library (jsdom)
+```
+
+Covers the human-play logic (`lib/humanPlay.ts` — submit gating, decision
+assembly), the interactive `ProposalPanel` (verdict buttons, PO modify input,
+read-only path), and the `api`/`format` helpers.
+
 ## API
 
 - `GET  /api/health` — backend health.

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createRun, openRunStream, openHumanPlay, sendDecisions } from "./lib/api";
 import type { Difficulty, OfficeEvent, RunConfig, WeekPayload } from "./types";
 import type { PendingVerdict } from "./components/ProposalPanel";
+import { allDecided, buildDecisions } from "./lib/humanPlay";
 import { EventLog } from "./components/EventLog";
 import { JournalPanel } from "./components/JournalPanel";
 import { KpiHud } from "./components/KpiHud";
@@ -26,10 +27,6 @@ const BASELINE_REWARDS: Record<Difficulty, { heuristic: number; oracle: number }
   hard: { heuristic: 0.24, oracle: 0.32 },
 };
 
-function allDecided(week: WeekPayload | undefined, pending: Record<string, PendingVerdict>): boolean {
-  const inbox = week?.inbox ?? [];
-  return inbox.length > 0 && inbox.every((p) => pending[p.proposal_id] !== undefined);
-}
 
 export function App() {
   const [config, setConfig] = useState<RunConfig>(DEFAULT_CONFIG);
@@ -167,11 +164,7 @@ export function App() {
 
   function submitWeek() {
     if (awaitingWeek === null || !socketRef.current) return;
-    const decisions = (currentWeek?.inbox ?? []).map((p) => ({
-      proposal_id: p.proposal_id,
-      verdict: pendingVerdicts[p.proposal_id]?.verdict ?? "request_info",
-      modified_params: pendingVerdicts[p.proposal_id]?.modified_params,
-    }));
+    const decisions = buildDecisions(currentWeek, pendingVerdicts);
     sendDecisions(socketRef.current, awaitingWeek, decisions);
     setAwaitingWeek(null);
     setStatusMessage("Submitted — closing the week...");
