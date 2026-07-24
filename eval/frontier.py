@@ -12,13 +12,16 @@ from .policies import CEOPolicy
 
 
 # Rough public list pricing, USD per 1M tokens: (input, output).
-# Substring-matched against the model id; most-specific keys first.
+# Substring-matched against the lowercased model id; most-specific keys first.
 PRICING_USD_PER_MTOK = {
     "gpt-4o-mini": (0.15, 0.60),
     "gpt-4o": (2.50, 10.00),
     "claude-opus": (15.00, 75.00),
     "claude-sonnet": (3.00, 15.00),
     "claude-haiku": (0.80, 4.00),
+    # Qwen via ModelScope/DashScope (Singapore list price; Max excludes promo).
+    "qwen3.7-max": (2.50, 7.50),
+    "qwen3.7-plus": (0.32, 1.28),
 }
 
 
