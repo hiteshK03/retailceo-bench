@@ -73,6 +73,12 @@ Full protocol: 10 seeds × 3 difficulties. Reward range is theoretical
 > **Oracle** is a genuine ceiling above the heuristic (via horizon-aware capex
 > foresight); see [docs/CALIBRATION.md](./docs/CALIBRATION.md) for the
 > reward-design analysis.
+>
+> **Model versions:** `Claude Opus 4` and `Claude Sonnet 4` were run via the
+> `Claude-Opus-4` / `Claude-Sonnet-4` gateway deployments (Anthropic Claude 4
+> family), `--permissive`, temperature 0, no parse retries. Exact model strings
+> and full per-seed traces are in `results/opus4_full.json` /
+> `results/sonnet4_full.json`.
 
 <details>
 <summary>Extended metrics (click to expand)</summary>
