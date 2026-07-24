@@ -55,28 +55,34 @@ It is **two things at once**:
 
 ## Leaderboard
 
-Full protocol: 10 seeds × 3 difficulties. Reward range is theoretical
-`[-4.5, +3.5]`; higher is better.
+Full protocol: 10 seeds × 3 difficulties. Ranked by **Weighted** score —
+a difficulty-weighted mean `(1·easy + 2·medium + 3·hard) / 6` that counts the
+adversarial hard regime most, since easy barely separates policies. Higher is
+better.
 
-| Policy | Easy | Medium | Hard | Avg |
-|--------|------|--------|------|-----|
-| Oracle (ceiling) | +2.01 | +1.60 | +0.32 | +1.31 |
-| Heuristic (19 rules) | +2.01 | +1.60 | +0.24 | +1.28 |
-| All-Approve | +2.08 | +1.32 | -0.17 | +1.08 |
-| **Claude Opus 4.6** | +1.59 | +1.10 | +0.27 | +0.99 |
-| **Claude Sonnet 4.6** | +1.55 | +1.06 | +0.25 | +0.96 |
-| Random | +0.42 | -0.27 | -1.37 | -0.41 |
+| Policy | Easy | Medium | Hard | Weighted |
+|--------|------|--------|------|----------|
+| Oracle (ceiling) | +2.01 | +1.60 | +0.32 | +1.03 |
+| Heuristic (19 rules) | +2.01 | +1.60 | +0.24 | +0.99 |
+| **Claude Opus 4.6** | +1.59 | +1.10 | +0.27 | +0.77 |
+| **Claude Sonnet 4.6** | +1.55 | +1.06 | +0.25 | +0.74 |
+| All-Approve | +2.08 | +1.32 | -0.17 | +0.70 |
+| Random | +0.42 | -0.27 | -1.37 | -0.71 |
 
 > All rows are under the corrected reward (10 seeds × 3 difficulties). Frontier
-> models still **underperform the hand-crafted Heuristic baseline** — and even
-> All-Approve — so closing that gap is the benchmark's core challenge. The
-> **Oracle** is a genuine ceiling above the heuristic (via horizon-aware capex
-> foresight); see [docs/CALIBRATION.md](./docs/CALIBRATION.md) for the
-> reward-design analysis.
+> models still **underperform the hand-crafted Heuristic baseline** — closing
+> that gap is the benchmark's core challenge. The weighting is what surfaces the
+> real ordering: on a plain average, mindless All-Approve outranks both frontier
+> models (easy/medium reward blind approval), but it collapses on hard (-0.17)
+> where the models hold positive — so the hard-weighted score ranks them
+> correctly. The **Oracle** is a genuine ceiling above the heuristic (via
+> horizon-aware capex foresight); see [docs/CALIBRATION.md](./docs/CALIBRATION.md)
+> for the reward-design analysis.
 >
 > **Run config:** frontier rows used `--permissive`, temperature 0, and no
-> parse retries. Full per-seed traces are in `results/opus4_full.json` /
-> `results/sonnet4_full.json`.
+> parse retries. Reproduce the ranking with
+> `python -m eval.cli leaderboard results/*.json`; full per-seed traces are in
+> `results/opus4_full.json` / `results/sonnet4_full.json`.
 
 <details>
 <summary>Extended metrics (click to expand)</summary>

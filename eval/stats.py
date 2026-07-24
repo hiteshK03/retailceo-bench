@@ -11,10 +11,34 @@ from __future__ import annotations
 
 import random
 import statistics
-from typing import List, Sequence, Tuple
+from typing import Dict, List, Mapping, Sequence, Tuple
 
 DEFAULT_SEED = 12345
 DEFAULT_RESAMPLES = 10000
+
+
+def weighted_score(
+    per_difficulty: Mapping[str, float],
+    weights: Mapping[str, float] | None = None,
+) -> float:
+    """Difficulty-weighted headline score.
+
+    ``per_difficulty`` maps difficulty name -> mean reward. Weights default to
+    ``economics.DIFFICULTY_WEIGHTS`` (easy 1, medium 2, hard 3). Only
+    difficulties present in ``per_difficulty`` contribute (the denominator is
+    the sum of their weights), so a lite/medium-only run still returns a
+    sensible number. Returns 0.0 for empty input.
+    """
+    if weights is None:
+        from retailceo import economics as _E
+        weights = _E.DIFFICULTY_WEIGHTS
+    num = 0.0
+    den = 0.0
+    for diff, value in per_difficulty.items():
+        w = weights.get(diff, 0.0)
+        num += w * value
+        den += w
+    return num / den if den else 0.0
 
 
 def bootstrap_ci_mean(

@@ -323,6 +323,17 @@ DIFFICULTY_GROWTH_LEVER_MULT: Dict[str, float] = {
     "hard":   1.0,
 }
 
+# Leaderboard difficulty weights. The headline score weights hard performance
+# more heavily than easy, because easy barely separates policies (approve-all
+# scores ~+2) while hard is the discriminating regime. A plain average lets the
+# least-informative difficulty count equally; these weights track skill.
+#   weighted_score = (1*easy + 2*medium + 3*hard) / 6
+DIFFICULTY_WEIGHTS: Dict[str, float] = {
+    "easy":   1.0,
+    "medium": 2.0,
+    "hard":   3.0,
+}
+
 # CapEx amortised-return multiplier.  A capex project returns
 # (amount / payback_weeks) * CAPEX_PAYBACK_UPLIFT in near-pure-margin revenue
 # each week for payback_weeks weeks.  At 2.0, fast-payback projects (<=~20wk)

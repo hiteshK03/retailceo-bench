@@ -262,6 +262,69 @@ def cmd_trace(args) -> int:
     return 0
 
 
+_LABEL_RE = __import__("re").compile(r"^(?P<policy>.*?)\s*\((?P<diff>easy|medium|hard)\)\s*$")
+
+
+def cmd_leaderboard(args) -> int:
+    """Aggregate result JSONs into a difficulty-weighted, ranked leaderboard."""
+    import statistics as _stat
+    from . import stats as _stats
+
+    # policy -> difficulty -> list of total_reward
+    rewards: Dict[str, Dict[str, List[float]]] = {}
+    for path in args.results:
+        with open(path) as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            continue
+        for label, entries in data.items():
+            m = _LABEL_RE.match(label)
+            if not m:
+                continue
+            policy = _clean_policy_name(m.group("policy"))
+            diff = m.group("diff")
+            bucket = rewards.setdefault(policy, {}).setdefault(diff, [])
+            bucket.extend(e["total_reward"] for e in entries)
+
+    if not rewards:
+        print("[leaderboard] no difficulty-labelled results found in inputs")
+        return 0
+
+    # policy -> {diff: mean, weighted, n}
+    table = []
+    for policy, by_diff in rewards.items():
+        means = {d: _stat.mean(v) for d, v in by_diff.items() if v}
+        w = _stats.weighted_score(means)
+        n = max((len(v) for v in by_diff.values()), default=0)
+        table.append((policy, means, w, n))
+    table.sort(key=lambda row: -row[2])
+
+    print(f"\n=== Leaderboard (weighted {args.weights}, {len(table)} policies) ===")
+    hdr = f"{'policy':<24} {'easy':>7} {'medium':>7} {'hard':>7} {'weighted':>9} {'n':>4}"
+    print(hdr)
+    print("-" * len(hdr))
+    for policy, means, w, n in table:
+        def cell(d: str) -> str:
+            return f"{means[d]:+7.2f}" if d in means else f"{'-':>7}"
+        print(f"{policy:<24} {cell('easy')} {cell('medium')} {cell('hard')} {w:+9.3f} {n:>4}")
+    print("\n  weighted = (1*easy + 2*medium + 3*hard) / 6; higher is better.")
+    return 0
+
+
+def _clean_policy_name(raw: str) -> str:
+    """Normalise a result label's policy component for display.
+
+    'frontier:Claude-Opus-4-permissive' -> 'Claude-Opus-4', bare names as-is.
+    """
+    name = raw.strip()
+    if name.startswith("frontier:"):
+        name = name[len("frontier:"):]
+    for suffix in ("-permissive", "-dual"):
+        if name.endswith(suffix):
+            name = name[: -len(suffix)]
+    return name
+
+
 def cmd_plot(args) -> int:
     from .visualize import plot_trace_file
     try:
@@ -507,6 +570,14 @@ def main() -> int:
     hb.add_argument("--dir", type=str, default="results/human")
     hb.add_argument("--out", type=str, default="results/human_baseline.json")
 
+    # leaderboard
+    lb = sub.add_parser("leaderboard",
+                        help="Rank result JSONs by difficulty-weighted score (1-2-3)")
+    lb.add_argument("results", nargs="+", help="Result JSON files to rank")
+    lb.add_argument("--weights", type=str, default="1-2-3",
+                    help="Display label for the weighting (weights come from "
+                         "economics.DIFFICULTY_WEIGHTS)")
+
     args = parser.parse_args()
 
     if args.command == "baselines":
@@ -521,6 +592,8 @@ def main() -> int:
         return cmd_plot(args)
     elif args.command == "human-baseline":
         return cmd_human_baseline(args)
+    elif args.command == "leaderboard":
+        return cmd_leaderboard(args)
     else:
         parser.print_help()
         return 1

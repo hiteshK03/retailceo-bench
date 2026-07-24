@@ -31,3 +31,25 @@ def test_sig_stars():
     assert stats.sig_stars(0.005) == "**"
     assert stats.sig_stars(0.02) == "*"
     assert stats.sig_stars(0.5) == "ns"
+
+
+def test_weighted_score_1_2_3():
+    from eval.stats import weighted_score
+    # (1*1.0 + 2*2.0 + 3*3.0) / 6 = 14/6
+    assert abs(weighted_score({"easy": 1.0, "medium": 2.0, "hard": 3.0}) - 14 / 6) < 1e-9
+
+
+def test_weighted_score_all_equal_is_that_value():
+    from eval.stats import weighted_score
+    assert abs(weighted_score({"easy": 0.5, "medium": 0.5, "hard": 0.5}) - 0.5) < 1e-9
+
+
+def test_weighted_score_missing_difficulty_uses_present_weights():
+    from eval.stats import weighted_score
+    # only medium+hard present -> (2*1.0 + 3*2.0) / (2+3) = 8/5
+    assert abs(weighted_score({"medium": 1.0, "hard": 2.0}) - 8 / 5) < 1e-9
+
+
+def test_weighted_score_empty_is_zero():
+    from eval.stats import weighted_score
+    assert weighted_score({}) == 0.0
