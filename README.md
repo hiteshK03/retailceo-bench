@@ -63,8 +63,8 @@ Full protocol: 10 seeds × 3 difficulties. Reward range is theoretical
 | Oracle (ceiling) | +2.01 | +1.60 | +0.32 | +1.31 |
 | Heuristic (19 rules) | +2.01 | +1.60 | +0.24 | +1.28 |
 | All-Approve | +2.08 | +1.32 | -0.17 | +1.08 |
-| **Claude Opus 4** | +1.59 | +1.10 | +0.27 | +0.99 |
-| **Claude Sonnet 4** | +1.55 | +1.06 | +0.25 | +0.96 |
+| **Claude Opus 4.6** | +1.59 | +1.10 | +0.27 | +0.99 |
+| **Claude Sonnet 4.6** | +1.55 | +1.06 | +0.25 | +0.96 |
 | Random | +0.42 | -0.27 | -1.37 | -0.41 |
 
 > All rows are under the corrected reward (10 seeds × 3 difficulties). Frontier
@@ -74,10 +74,8 @@ Full protocol: 10 seeds × 3 difficulties. Reward range is theoretical
 > foresight); see [docs/CALIBRATION.md](./docs/CALIBRATION.md) for the
 > reward-design analysis.
 >
-> **Model versions:** `Claude Opus 4` and `Claude Sonnet 4` were run via the
-> `Claude-Opus-4` / `Claude-Sonnet-4` gateway deployments (Anthropic Claude 4
-> family), `--permissive`, temperature 0, no parse retries. Exact model strings
-> and full per-seed traces are in `results/opus4_full.json` /
+> **Run config:** frontier rows used `--permissive`, temperature 0, and no
+> parse retries. Full per-seed traces are in `results/opus4_full.json` /
 > `results/sonnet4_full.json`.
 
 <details>
@@ -94,12 +92,12 @@ Full protocol: 10 seeds × 3 difficulties. Reward range is theoretical
 | All-Approve | Easy | +2.08 | +7.62 | 4.2 | 33.1 | +49.2 |
 | All-Approve | Medium | +1.32 | +2.78 | 4.5 | 31.7 | +42.0 |
 | All-Approve | Hard | -0.17 | -5.86 | 5.0 | 31.1 | +28.0 |
-| Opus 4 | Easy | +1.59 | +9.67 | 7.7 | 28.6 | +24.2 |
-| Opus 4 | Medium | +1.10 | +4.84 | 6.4 | 29.5 | +20.9 |
-| Opus 4 | Hard | +0.27 | +0.61 | 4.7 | 31.0 | +15.8 |
-| Sonnet 4 | Easy | +1.55 | +9.69 | 7.4 | 28.7 | +21.7 |
-| Sonnet 4 | Medium | +1.06 | +4.67 | 6.7 | 28.8 | +20.3 |
-| Sonnet 4 | Hard | +0.25 | +0.48 | 3.9 | 31.7 | +14.1 |
+| Opus 4.6 | Easy | +1.59 | +9.67 | 7.7 | 28.6 | +24.2 |
+| Opus 4.6 | Medium | +1.10 | +4.84 | 6.4 | 29.5 | +20.9 |
+| Opus 4.6 | Hard | +0.27 | +0.61 | 4.7 | 31.0 | +15.8 |
+| Sonnet 4.6 | Easy | +1.55 | +9.69 | 7.4 | 28.7 | +21.7 |
+| Sonnet 4.6 | Medium | +1.06 | +4.67 | 6.7 | 28.8 | +20.3 |
+| Sonnet 4.6 | Hard | +0.25 | +0.48 | 3.9 | 31.7 | +14.1 |
 | Random | Easy | +0.42 | +4.87 | 19.2 | 14.2 | +45.0 |
 | Random | Medium | -0.27 | -0.83 | 17.6 | 17.3 | +38.0 |
 | Random | Hard | -1.37 | -6.99 | 18.1 | 14.6 | +33.6 |
