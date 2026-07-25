@@ -67,22 +67,27 @@ better.
 | **Claude Opus 4.6** | +1.59 | +1.10 | +0.27 | +0.77 |
 | **Claude Sonnet 4.6** | +1.55 | +1.06 | +0.25 | +0.74 |
 | All-Approve | +2.08 | +1.32 | -0.17 | +0.70 |
+| **Qwen3.7 Plus** | +1.68 | +0.86 | -0.12 | +0.51 |
+| **Qwen3.7 Max** | +1.56 | +0.93 | -0.15 | +0.49 |
 | Random | +0.42 | -0.27 | -1.37 | -0.71 |
 
-> All rows are under the corrected reward (10 seeds × 3 difficulties). Frontier
-> models still **underperform the hand-crafted Heuristic baseline** — closing
-> that gap is the benchmark's core challenge. The weighting is what surfaces the
-> real ordering: on a plain average, mindless All-Approve outranks both frontier
-> models (easy/medium reward blind approval), but it collapses on hard (-0.17)
-> where the models hold positive — so the hard-weighted score ranks them
-> correctly. The **Oracle** is a genuine ceiling above the heuristic (via
-> horizon-aware capex foresight); see [docs/CALIBRATION.md](./docs/CALIBRATION.md)
-> for the reward-design analysis.
+> All rows are under the corrected reward (10 seeds × 3 difficulties). Every LLM
+> tested still **underperforms the hand-crafted Heuristic baseline** — closing
+> that gap is the benchmark's core challenge. The hard regime is where they
+> separate: the Claude models stay positive on hard (+0.25/+0.27) while the
+> open-source **Qwen3.7 models go negative** (-0.12/-0.15) — they look strong on
+> easy (Plus even tops it) but can't filter self-serving proposals under
+> pressure, and extended reasoning doesn't rescue them. The weighting surfaces
+> this: on a plain average, mindless All-Approve outranks the Claude models
+> (easy/medium reward blind approval), but it collapses on hard so the
+> hard-weighted score ranks them correctly. The **Oracle** is a genuine ceiling
+> above the heuristic (horizon-aware capex foresight); see
+> [docs/CALIBRATION.md](./docs/CALIBRATION.md) for the reward-design analysis.
 >
-> **Run config:** frontier rows used `--permissive`, temperature 0, and no
-> parse retries. Reproduce the ranking with
-> `python -m eval.cli leaderboard results/*.json`; full per-seed traces are in
-> `results/opus4_full.json` / `results/sonnet4_full.json`.
+> **Run config:** LLM rows used `--permissive`, temperature 0, and no parse
+> retries; Qwen ran via ModelScope (thinking on). Reproduce the ranking with
+> `python -m eval.cli leaderboard results/*.json`; full per-seed traces are the
+> `results/*_full.json` files.
 
 <details>
 <summary>Extended metrics (click to expand)</summary>
@@ -104,6 +109,12 @@ better.
 | Sonnet 4.6 | Easy | +1.55 | +9.69 | 7.4 | 28.7 | +21.7 |
 | Sonnet 4.6 | Medium | +1.06 | +4.67 | 6.7 | 28.8 | +20.3 |
 | Sonnet 4.6 | Hard | +0.25 | +0.48 | 3.9 | 31.7 | +14.1 |
+| Qwen3.7 Plus | Easy | +1.68 | +8.69 | 4.2 | 32.7 | +14.0 |
+| Qwen3.7 Plus | Medium | +0.86 | +3.29 | 4.7 | 31.3 | +9.7 |
+| Qwen3.7 Plus | Hard | -0.12 | -1.86 | 3.4 | 32.3 | +13.7 |
+| Qwen3.7 Max | Easy | +1.56 | +9.62 | 7.1 | 29.6 | +18.8 |
+| Qwen3.7 Max | Medium | +0.93 | +4.68 | 6.7 | 29.3 | +15.0 |
+| Qwen3.7 Max | Hard | -0.15 | -0.11 | 5.7 | 29.7 | +6.3 |
 | Random | Easy | +0.42 | +4.87 | 19.2 | 14.2 | +45.0 |
 | Random | Medium | -0.27 | -0.83 | 17.6 | 17.3 | +38.0 |
 | Random | Hard | -1.37 | -6.99 | 18.1 | 14.6 | +33.6 |
@@ -530,7 +541,7 @@ corrected reward, committed under `results/` · **human-playable Office +
 `human-baseline` aggregation** (see [Human Play](#human-play)).
 
 **Next:**
-- [ ] Leaderboard with more models (GPT-4o/4.1, Gemini 2.5 Pro, Llama, Qwen, open-weight)
+- [ ] Leaderboard with more models (GPT-4o/4.1, Gemini 2.5 Pro, Llama, and other open-weight)
 - [x] Refresh Sonnet 4 / Opus 4 rows under the corrected reward
 - [ ] Collect human baseline across several players (infra now in place)
 - [ ] Widen the Oracle ceiling (festival campaign timing; hard-difficulty edge is borderline)
