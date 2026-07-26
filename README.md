@@ -55,10 +55,10 @@ It is **two things at once**:
 
 ## Leaderboard
 
-Full protocol: 10 seeds × 3 difficulties. Ranked by **EBITDA margin** — the
-actual business outcome, not a tunable reward. All columns are
-difficulty-weighted `(1·easy + 2·medium + 3·hard) / 6`, which counts the
-adversarial hard regime most since easy barely separates policies.
+Full protocol: 10 seeds × 3 difficulties. Ranked by **EBITDA margin** (operating
+profit). All columns are difficulty-weighted `(1·easy + 2·medium + 3·hard) / 6`,
+which counts the adversarial hard regime most since easy barely separates
+policies.
 
 | Policy | EBITDA % | Stockout % | NPS | Min-cash (Cr) |
 |--------|---------:|-----------:|----:|--------------:|
@@ -71,22 +71,13 @@ adversarial hard regime most since easy barely separates policies.
 | All-Approve | -0.73 | 4.7 | 31.6 | +19.9 |
 | Random | -2.96 | 18.1 | 15.4 | +19.9 |
 
-> **Why EBITDA, not the reward score?** The benchmark ranks on **operating
-> profit** — a measured business fact — rather than the RL reward, whose weights
-> and normalizers are *design choices* tuned for training and can be re-tuned
-> without any model changing. Higher EBITDA % = more profitable; min-cash is the
-> solvency gate (all models here stayed solvent, ~₹20 Cr floor).
->
-> Every LLM tested still **underperforms the hand-crafted Heuristic** — closing
-> that gap is the benchmark's core challenge. Notably, **All-Approve runs at a
-> loss** (-0.73% EBITDA): blindly approving self-serving proposals destroys
-> margin, so the business metric ranks it below every real model *for free* —
-> no weighting tricks needed. Among LLMs, all four are profitable but trail the
-> heuristic's +4.29%; the **Oracle** is a genuine ceiling above it (horizon-aware
-> capex foresight — see [docs/CALIBRATION.md](./docs/CALIBRATION.md)).
->
-> The RL **reward score** (the training signal, a separate axis) lives in the
-> [RL Training Environment](#rl-training-environment-openenv) section.
+> Higher EBITDA % = more profitable; min-cash is the solvency gate (all models
+> here stayed solvent, ~₹20 Cr floor). Every LLM tested still **underperforms the
+> hand-crafted Heuristic** — closing that gap is the benchmark's core challenge.
+> Notably, **All-Approve runs at a loss** (-0.73% EBITDA): blindly approving
+> self-serving proposals destroys margin. Among LLMs, all four are profitable but
+> trail the heuristic's +4.29%; the **Oracle** is a genuine ceiling above it
+> (horizon-aware capex foresight — see [docs/CALIBRATION.md](./docs/CALIBRATION.md)).
 >
 > **Run config:** LLM rows used `--permissive`, temperature 0, and no parse
 > retries; Qwen ran via ModelScope (thinking on). Reproduce with
@@ -351,13 +342,10 @@ with RetailCEOEnv(base_url="http://localhost:8000") as env:
 `ebitda_margin_pct`, `stockout_rate_pct`, `nps`, …) and `metadata["parse"]`
 (how the last action parsed) for logging and reward shaping.
 
-### Reward score (training signal — not the benchmark rank)
+### Reward score (training signal)
 
-The env's per-step reward is a *dense, shaped training signal*, distinct from the
-[EBITDA leaderboard](#leaderboard). Its weights (0.25 kpi-delta, 0.70 terminal
-EBITDA, small penalties) and normalizers are **design choices** tuned for
-learnability — they can be re-tuned without any policy changing, which is exactly
-why the public leaderboard ranks on measured EBITDA instead. For reference, the
+The env's per-step reward is a dense, shaped training signal (weights: 0.25
+kpi-delta, 0.70 terminal EBITDA, small penalties). For reference, the
 difficulty-weighted reward `(1·easy + 2·medium + 3·hard) / 6`:
 
 | Policy | Weighted reward |
@@ -372,9 +360,7 @@ difficulty-weighted reward `(1·easy + 2·medium + 3·hard) / 6`:
 | Random | -0.71 |
 
 Reproduce with `python -m eval.cli leaderboard results/*_full.json --metric reward`.
-See [docs/CALIBRATION.md](./docs/CALIBRATION.md) for how the reward is shaped and
-why All-Approve scores high here (blind approval is rewarded on easy/medium) yet
-runs at a **loss** in EBITDA terms.
+See [docs/CALIBRATION.md](./docs/CALIBRATION.md) for how the reward is shaped.
 
 ---
 
