@@ -87,40 +87,41 @@ policies.
 <details>
 <summary>Extended metrics (click to expand)</summary>
 
-| Policy | Difficulty | Reward | EBITDA% | Stockout% | NPS | FCF (Cr) |
-|--------|-----------|--------|---------|-----------|-----|----------|
-| Oracle | Easy | +2.01 | +10.50 | 1.9 | 34.3 | +36.5 |
-| Oracle | Medium | +1.60 | +6.02 | 1.1 | 34.0 | +37.0 |
-| Oracle | Hard | +0.32 | +1.62 | 1.1 | 32.8 | +29.0 |
-| Heuristic | Easy | +2.01 | +10.55 | 1.9 | 34.3 | +36.4 |
-| Heuristic | Medium | +1.60 | +6.00 | 1.1 | 34.0 | +36.8 |
-| Heuristic | Hard | +0.24 | +1.06 | 1.2 | 32.7 | +27.9 |
-| All-Approve | Easy | +2.08 | +7.62 | 4.2 | 33.1 | +49.2 |
-| All-Approve | Medium | +1.32 | +2.78 | 4.5 | 31.7 | +42.0 |
-| All-Approve | Hard | -0.17 | -5.86 | 5.0 | 31.1 | +28.0 |
-| Opus 4.6 | Easy | +1.59 | +9.67 | 7.7 | 28.6 | +24.2 |
-| Opus 4.6 | Medium | +1.10 | +4.84 | 6.4 | 29.5 | +20.9 |
-| Opus 4.6 | Hard | +0.27 | +0.61 | 4.7 | 31.0 | +15.8 |
-| Sonnet 4.6 | Easy | +1.55 | +9.69 | 7.4 | 28.7 | +21.7 |
-| Sonnet 4.6 | Medium | +1.06 | +4.67 | 6.7 | 28.8 | +20.3 |
-| Sonnet 4.6 | Hard | +0.25 | +0.48 | 3.9 | 31.7 | +14.1 |
-| Qwen3.7 Plus | Easy | +1.68 | +8.69 | 4.2 | 32.7 | +14.0 |
-| Qwen3.7 Plus | Medium | +0.86 | +3.29 | 4.7 | 31.3 | +9.7 |
-| Qwen3.7 Plus | Hard | -0.12 | -1.86 | 3.4 | 32.3 | +13.7 |
-| Qwen3.7 Max | Easy | +1.56 | +9.62 | 7.1 | 29.6 | +18.8 |
-| Qwen3.7 Max | Medium | +0.93 | +4.68 | 6.7 | 29.3 | +15.0 |
-| Qwen3.7 Max | Hard | -0.15 | -0.11 | 5.7 | 29.7 | +6.3 |
-| Random | Easy | +0.42 | +4.87 | 19.2 | 14.2 | +45.0 |
-| Random | Medium | -0.27 | -0.83 | 17.6 | 17.3 | +38.0 |
-| Random | Hard | -1.37 | -6.99 | 18.1 | 14.6 | +33.6 |
+Rows in leaderboard (EBITDA) order; `Reward` is the RL training signal, shown
+last for reference.
+
+| Policy | Difficulty | EBITDA% | Stockout% | NPS | FCF (Cr) | Reward |
+|--------|-----------|---------|-----------|-----|----------|--------|
+| Oracle | Easy | +10.50 | 1.9 | 34.3 | +36.5 | +2.01 |
+| Oracle | Medium | +6.02 | 1.1 | 34.0 | +37.0 | +1.60 |
+| Oracle | Hard | +1.62 | 1.1 | 32.8 | +29.0 | +0.32 |
+| Heuristic | Easy | +10.55 | 1.9 | 34.3 | +36.4 | +2.01 |
+| Heuristic | Medium | +6.00 | 1.1 | 34.0 | +36.8 | +1.60 |
+| Heuristic | Hard | +1.06 | 1.2 | 32.7 | +27.9 | +0.24 |
+| Opus 4.6 | Easy | +9.67 | 7.7 | 28.6 | +24.2 | +1.59 |
+| Opus 4.6 | Medium | +4.84 | 6.4 | 29.5 | +20.9 | +1.09 |
+| Opus 4.6 | Hard | +0.61 | 4.7 | 31.0 | +15.8 | +0.27 |
+| Sonnet 4.6 | Easy | +9.69 | 7.4 | 28.7 | +21.7 | +1.55 |
+| Sonnet 4.6 | Medium | +4.67 | 6.7 | 28.8 | +20.3 | +1.06 |
+| Sonnet 4.6 | Hard | +0.48 | 3.9 | 31.7 | +14.1 | +0.25 |
+| Qwen3.7 Max | Easy | +9.62 | 7.1 | 29.6 | +18.8 | +1.56 |
+| Qwen3.7 Max | Medium | +4.68 | 6.7 | 29.3 | +15.0 | +0.93 |
+| Qwen3.7 Max | Hard | -0.11 | 5.7 | 29.7 | +6.3 | -0.15 |
+| Qwen3.7 Plus | Easy | +8.69 | 4.2 | 32.7 | +14.0 | +1.68 |
+| Qwen3.7 Plus | Medium | +3.29 | 4.7 | 31.3 | +9.7 | +0.86 |
+| Qwen3.7 Plus | Hard | -1.86 | 3.4 | 32.3 | +13.7 | -0.12 |
+| All-Approve | Easy | +7.62 | 4.2 | 33.1 | +49.2 | +2.08 |
+| All-Approve | Medium | +2.78 | 4.5 | 31.7 | +42.0 | +1.32 |
+| All-Approve | Hard | -5.86 | 5.0 | 31.1 | +28.0 | -0.17 |
+| Random | Easy | +4.87 | 19.2 | 14.2 | +45.0 | +0.42 |
+| Random | Medium | -0.83 | 17.6 | 17.3 | +38.0 | -0.27 |
+| Random | Hard | -6.99 | 18.1 | 14.6 | +33.6 | -1.37 |
 
 </details>
 
-> The extended table keeps both the RL **Reward** (training signal) and the
-> **finance** columns per difficulty. Baselines reproduce with
-> `python -m eval.cli baselines --protocol full`; frontier rows with
-> `python -m eval.cli frontier --model <model> --protocol full`. Adding more
-> models is welcome as PRs.
+> Baselines reproduce with `python -m eval.cli baselines --protocol full`;
+> frontier rows with `python -m eval.cli frontier --model <model> --protocol full`.
+> Adding more models is welcome as PRs.
 
 ### Cost vs. profitability
 
