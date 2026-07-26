@@ -265,13 +265,31 @@ def cmd_trace(args) -> int:
 _LABEL_RE = __import__("re").compile(r"^(?P<policy>.*?)\s*\((?P<diff>easy|medium|hard)\)\s*$")
 
 
+# CLI metric name -> result-JSON field. `reward` is the RL training signal;
+# the default is EBITDA margin, the primary business outcome the benchmark ranks on.
+_METRIC_FIELD = {
+    "ebitda": "ebitda_margin_pct",
+    "reward": "total_reward",
+    "stockout": "avg_stockout_pct",
+    "nps": "avg_nps",
+}
+
+
 def cmd_leaderboard(args) -> int:
-    """Aggregate result JSONs into a difficulty-weighted, ranked leaderboard."""
+    """Aggregate result JSONs into a difficulty-weighted, ranked leaderboard.
+
+    Ranks by --metric (default: ebitda margin — the business outcome). Also
+    shows the companion finance columns (stockout, NPS, min-cash). `--metric
+    reward` ranks by the RL training signal instead.
+    """
     import statistics as _stat
     from . import stats as _stats
 
-    # policy -> difficulty -> list of total_reward
-    rewards: Dict[str, Dict[str, List[float]]] = {}
+    rank_field = _METRIC_FIELD.get(args.metric, args.metric)
+    # policy -> difficulty -> {field: [values]}
+    agg: Dict[str, Dict[str, Dict[str, List[float]]]] = {}
+    fields = ["ebitda_margin_pct", "total_reward", "avg_stockout_pct", "avg_nps",
+              "min_cash_inr", rank_field]
     for path in args.results:
         with open(path) as f:
             data = json.load(f)
@@ -283,31 +301,43 @@ def cmd_leaderboard(args) -> int:
                 continue
             policy = _clean_policy_name(m.group("policy"))
             diff = m.group("diff")
-            bucket = rewards.setdefault(policy, {}).setdefault(diff, [])
-            bucket.extend(e["total_reward"] for e in entries)
+            slot = agg.setdefault(policy, {}).setdefault(diff, {})
+            for fld in fields:
+                slot.setdefault(fld, []).extend(
+                    e[fld] for e in entries if e.get(fld) is not None
+                )
 
-    if not rewards:
+    if not agg:
         print("[leaderboard] no difficulty-labelled results found in inputs")
         return 0
 
-    # policy -> {diff: mean, weighted, n}
-    table = []
-    for policy, by_diff in rewards.items():
-        means = {d: _stat.mean(v) for d, v in by_diff.items() if v}
-        w = _stats.weighted_score(means)
-        n = max((len(v) for v in by_diff.values()), default=0)
-        table.append((policy, means, w, n))
-    table.sort(key=lambda row: -row[2])
+    def wmean(by_diff, fld, scale=1.0):
+        means = {d: _stat.mean(v[fld]) * scale for d, v in by_diff.items() if v.get(fld)}
+        return _stats.weighted_score(means)
 
-    print(f"\n=== Leaderboard (weighted {args.weights}, {len(table)} policies) ===")
-    hdr = f"{'policy':<24} {'easy':>7} {'medium':>7} {'hard':>7} {'weighted':>9} {'n':>4}"
+    table = []
+    for policy, by_diff in agg.items():
+        rank = wmean(by_diff, rank_field)
+        ebitda = wmean(by_diff, "ebitda_margin_pct")
+        stockout = wmean(by_diff, "avg_stockout_pct")
+        nps = wmean(by_diff, "avg_nps")
+        mincash = wmean(by_diff, "min_cash_inr", scale=1e-7)
+        n = max((len(v.get(rank_field, [])) for v in by_diff.values()), default=0)
+        table.append((policy, rank, ebitda, stockout, nps, mincash, n))
+    table.sort(key=lambda row: -row[1])
+
+    metric_lbl = args.metric
+    print(f"\n=== Leaderboard (weighted {args.weights}, ranked by {metric_lbl}, "
+          f"{len(table)} policies) ===")
+    hdr = (f"{'policy':<24} {'EBITDA%':>8} {'stockout%':>9} {'NPS':>6} "
+           f"{'minCash':>8} {'n':>4}")
     print(hdr)
     print("-" * len(hdr))
-    for policy, means, w, n in table:
-        def cell(d: str) -> str:
-            return f"{means[d]:+7.2f}" if d in means else f"{'-':>7}"
-        print(f"{policy:<24} {cell('easy')} {cell('medium')} {cell('hard')} {w:+9.3f} {n:>4}")
-    print("\n  weighted = (1*easy + 2*medium + 3*hard) / 6; higher is better.")
+    for policy, rank, ebitda, stockout, nps, mincash, n in table:
+        print(f"{policy:<24} {ebitda:+8.2f} {stockout:9.1f} {nps:6.1f} "
+              f"{mincash:+8.1f} {n:>4}")
+    print(f"\n  weighted = (1*easy + 2*medium + 3*hard) / 6. Ranked by {metric_lbl}; "
+          "EBITDA margin higher = better.")
     return 0
 
 
@@ -572,8 +602,12 @@ def main() -> int:
 
     # leaderboard
     lb = sub.add_parser("leaderboard",
-                        help="Rank result JSONs by difficulty-weighted score (1-2-3)")
+                        help="Rank result JSONs by difficulty-weighted finance terms")
     lb.add_argument("results", nargs="+", help="Result JSON files to rank")
+    lb.add_argument("--metric", default="ebitda",
+                    choices=["ebitda", "reward", "stockout", "nps"],
+                    help="Ranking metric (default: ebitda margin — the business "
+                         "outcome; 'reward' = the RL training signal)")
     lb.add_argument("--weights", type=str, default="1-2-3",
                     help="Display label for the weighting (weights come from "
                          "economics.DIFFICULTY_WEIGHTS)")

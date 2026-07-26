@@ -37,7 +37,7 @@ _DIFF_RE = re.compile(r"\((easy|medium|hard)\)")
 
 
 def _model_point(path: str) -> Tuple[float, float]:
-    """Return (weighted_score, mean_cost_per_episode) for one result file."""
+    """Return (weighted_ebitda_margin_pct, mean_cost_per_episode) for a result file."""
     with open(path) as f:
         data = json.load(f)
     per_diff: Dict[str, float] = {}
@@ -46,7 +46,7 @@ def _model_point(path: str) -> Tuple[float, float]:
         m = _DIFF_RE.search(label)
         if not m:
             continue
-        per_diff[m.group(1)] = statistics.mean(e["total_reward"] for e in entries)
+        per_diff[m.group(1)] = statistics.mean(e["ebitda_margin_pct"] for e in entries)
         costs += [e["est_cost_usd"] for e in entries if e.get("est_cost_usd") is not None]
     if not costs:
         raise ValueError(f"{path} has no est_cost_usd — cannot place it on the cost axis")
@@ -78,8 +78,8 @@ def render(out_path: str, models=MODELS) -> str:
                     xytext=(10, 6), fontsize=9, color="#0b0b0b")
 
     ax.set_xlabel("Cost per episode (USD, log scale)", fontsize=11, color="#52514e")
-    ax.set_ylabel("Weighted benchmark score", fontsize=11, color="#52514e")
-    ax.set_title("Cost vs. score — value is up and to the left", fontsize=13, color="#0b0b0b")
+    ax.set_ylabel("EBITDA margin % (weighted)", fontsize=11, color="#52514e")
+    ax.set_title("Cost vs. profitability — value is up and to the left", fontsize=13, color="#0b0b0b")
     ax.grid(True, which="both", alpha=0.25, zorder=0)
     ax.legend(title="Provider", frameon=False, loc="upper left")
     # Extra right headroom so the longest direct label doesn't clip the frame.

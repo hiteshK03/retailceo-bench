@@ -55,38 +55,42 @@ It is **two things at once**:
 
 ## Leaderboard
 
-Full protocol: 10 seeds × 3 difficulties. Ranked by **Weighted** score —
-a difficulty-weighted mean `(1·easy + 2·medium + 3·hard) / 6` that counts the
-adversarial hard regime most, since easy barely separates policies. Higher is
-better.
+Full protocol: 10 seeds × 3 difficulties. Ranked by **EBITDA margin** — the
+actual business outcome, not a tunable reward. All columns are
+difficulty-weighted `(1·easy + 2·medium + 3·hard) / 6`, which counts the
+adversarial hard regime most since easy barely separates policies.
 
-| Policy | Easy | Medium | Hard | Weighted |
-|--------|------|--------|------|----------|
-| Oracle (ceiling) | +2.01 | +1.60 | +0.32 | +1.03 |
-| Heuristic (19 rules) | +2.01 | +1.60 | +0.24 | +0.99 |
-| **Claude Opus 4.6** | +1.59 | +1.10 | +0.27 | +0.77 |
-| **Claude Sonnet 4.6** | +1.55 | +1.06 | +0.25 | +0.74 |
-| All-Approve | +2.08 | +1.32 | -0.17 | +0.70 |
-| **Qwen3.7 Plus** | +1.68 | +0.86 | -0.12 | +0.51 |
-| **Qwen3.7 Max** | +1.56 | +0.93 | -0.15 | +0.49 |
-| Random | +0.42 | -0.27 | -1.37 | -0.71 |
+| Policy | EBITDA % | Stockout % | NPS | Min-cash (Cr) |
+|--------|---------:|-----------:|----:|--------------:|
+| Oracle (ceiling) | +4.57 | 1.2 | 33.4 | +20.0 |
+| Heuristic (19 rules) | +4.29 | 1.3 | 33.4 | +20.0 |
+| **Claude Opus 4.6** | +3.53 | 5.8 | 30.1 | +20.0 |
+| **Claude Sonnet 4.6** | +3.41 | 5.4 | 30.2 | +20.0 |
+| **Qwen3.7 Max** | +3.11 | 6.3 | 29.5 | +20.0 |
+| **Qwen3.7 Plus** | +1.61 | 4.0 | 32.0 | +19.7 |
+| All-Approve | -0.73 | 4.7 | 31.6 | +19.9 |
+| Random | -2.96 | 18.1 | 15.4 | +19.9 |
 
-> All rows are under the corrected reward (10 seeds × 3 difficulties). Every LLM
-> tested still **underperforms the hand-crafted Heuristic baseline** — closing
-> that gap is the benchmark's core challenge. The hard regime is where they
-> separate: the Claude models stay positive on hard (+0.25/+0.27) while the
-> open-source **Qwen3.7 models go negative** (-0.12/-0.15) — they look strong on
-> easy (Plus even tops it) but can't filter self-serving proposals under
-> pressure, and extended reasoning doesn't rescue them. The weighting surfaces
-> this: on a plain average, mindless All-Approve outranks the Claude models
-> (easy/medium reward blind approval), but it collapses on hard so the
-> hard-weighted score ranks them correctly. The **Oracle** is a genuine ceiling
-> above the heuristic (horizon-aware capex foresight); see
-> [docs/CALIBRATION.md](./docs/CALIBRATION.md) for the reward-design analysis.
+> **Why EBITDA, not the reward score?** The benchmark ranks on **operating
+> profit** — a measured business fact — rather than the RL reward, whose weights
+> and normalizers are *design choices* tuned for training and can be re-tuned
+> without any model changing. Higher EBITDA % = more profitable; min-cash is the
+> solvency gate (all models here stayed solvent, ~₹20 Cr floor).
+>
+> Every LLM tested still **underperforms the hand-crafted Heuristic** — closing
+> that gap is the benchmark's core challenge. Notably, **All-Approve runs at a
+> loss** (-0.73% EBITDA): blindly approving self-serving proposals destroys
+> margin, so the business metric ranks it below every real model *for free* —
+> no weighting tricks needed. Among LLMs, all four are profitable but trail the
+> heuristic's +4.29%; the **Oracle** is a genuine ceiling above it (horizon-aware
+> capex foresight — see [docs/CALIBRATION.md](./docs/CALIBRATION.md)).
+>
+> The RL **reward score** (the training signal, a separate axis) lives in the
+> [RL Training Environment](#rl-training-environment-openenv) section.
 >
 > **Run config:** LLM rows used `--permissive`, temperature 0, and no parse
-> retries; Qwen ran via ModelScope (thinking on). Reproduce the ranking with
-> `python -m eval.cli leaderboard results/*.json`; full per-seed traces are the
+> retries; Qwen ran via ModelScope (thinking on). Reproduce with
+> `python -m eval.cli leaderboard results/*_full.json`; per-seed traces are the
 > `results/*_full.json` files.
 
 <details>
@@ -121,23 +125,25 @@ better.
 
 </details>
 
-> All rows are under the corrected reward (see [Reward](#reward)). Baselines
-> reproduce with `python -m eval.cli baselines --protocol full`; frontier rows
-> with `python -m eval.cli frontier --model <model> --protocol full`. Adding
-> more models is welcome as PRs.
+> The extended table keeps both the RL **Reward** (training signal) and the
+> **finance** columns per difficulty. Baselines reproduce with
+> `python -m eval.cli baselines --protocol full`; frontier rows with
+> `python -m eval.cli frontier --model <model> --protocol full`. Adding more
+> models is welcome as PRs.
 
-### Cost vs. score
+### Cost vs. profitability
 
 <p align="center">
-  <img src="assets/cost_vs_score.png" alt="Scatter of weighted benchmark score against cost per episode (log scale). Claude Opus 4.6 and Sonnet 4.6 in blue at higher score and higher cost; Qwen3.7 Plus and Max in orange at lower score but much lower cost." width="760">
+  <img src="assets/cost_vs_score.png" alt="Scatter of weighted EBITDA margin against cost per episode (log scale). Claude Opus 4.6 and Sonnet 4.6 in blue at higher cost; Qwen3.7 Plus and Max in orange at much lower cost with comparable margin." width="760">
 </p>
 
-Score isn't the whole story — **cost per episode spans 26×** across these models.
-Qwen3.7 Plus reaches **66% of Opus 4.6's weighted score for ~4% of its cost**
-($0.048 vs $1.27/episode), and it edges out Sonnet 4.6 on cost too. So while the
-Qwen models rank lowest on raw score, they are the **most cost-efficient** LLMs
-tested — a real option when budget matters more than the last fraction of a point.
-Regenerate with `python -m eval.plot_cost_score`.
+Profitability isn't the whole story — **cost per episode spans 26×** across these
+models. **Qwen3.7 Max hits +3.11% EBITDA at $0.29/episode**, within a fraction of
+a point of Opus 4.6's +3.53% but at **~4× less cost**, and it sits right beside
+Sonnet 4.6. **Qwen3.7 Plus is the cheapest by far** ($0.048/episode) while still
+running the business profitably. So while the Qwen models rank lower on raw
+margin, they are the **most cost-efficient** LLMs tested — a real option when
+budget matters. Regenerate with `python -m eval.plot_cost_score`.
 
 ---
 
@@ -344,6 +350,31 @@ with RetailCEOEnv(base_url="http://localhost:8000") as env:
 `result.observation` also surfaces read-only scalars (`week`, `cash_inr`,
 `ebitda_margin_pct`, `stockout_rate_pct`, `nps`, …) and `metadata["parse"]`
 (how the last action parsed) for logging and reward shaping.
+
+### Reward score (training signal — not the benchmark rank)
+
+The env's per-step reward is a *dense, shaped training signal*, distinct from the
+[EBITDA leaderboard](#leaderboard). Its weights (0.25 kpi-delta, 0.70 terminal
+EBITDA, small penalties) and normalizers are **design choices** tuned for
+learnability — they can be re-tuned without any policy changing, which is exactly
+why the public leaderboard ranks on measured EBITDA instead. For reference, the
+difficulty-weighted reward `(1·easy + 2·medium + 3·hard) / 6`:
+
+| Policy | Weighted reward |
+|--------|----------------:|
+| Oracle | +1.03 |
+| Heuristic | +0.99 |
+| Claude Opus 4.6 | +0.77 |
+| Claude Sonnet 4.6 | +0.74 |
+| All-Approve | +0.70 |
+| Qwen3.7 Plus | +0.51 |
+| Qwen3.7 Max | +0.49 |
+| Random | -0.71 |
+
+Reproduce with `python -m eval.cli leaderboard results/*_full.json --metric reward`.
+See [docs/CALIBRATION.md](./docs/CALIBRATION.md) for how the reward is shaped and
+why All-Approve scores high here (blind approval is rewarded on easy/medium) yet
+runs at a **loss** in EBITDA terms.
 
 ---
 
