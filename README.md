@@ -126,6 +126,19 @@ better.
 > with `python -m eval.cli frontier --model <model> --protocol full`. Adding
 > more models is welcome as PRs.
 
+### Cost vs. score
+
+<p align="center">
+  <img src="assets/cost_vs_score.png" alt="Scatter of weighted benchmark score against cost per episode (log scale). Claude Opus 4.6 and Sonnet 4.6 in blue at higher score and higher cost; Qwen3.7 Plus and Max in orange at lower score but much lower cost." width="760">
+</p>
+
+Score isn't the whole story — **cost per episode spans 26×** across these models.
+Qwen3.7 Plus reaches **66% of Opus 4.6's weighted score for ~4% of its cost**
+($0.048 vs $1.27/episode), and it edges out Sonnet 4.6 on cost too. So while the
+Qwen models rank lowest on raw score, they are the **most cost-efficient** LLMs
+tested — a real option when budget matters more than the last fraction of a point.
+Regenerate with `python -m eval.plot_cost_score`.
+
 ---
 
 ## Quickstart
