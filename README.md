@@ -137,6 +137,33 @@ running the business profitably. So while the Qwen models rank lower on raw
 margin, they are the **most cost-efficient** LLMs tested — a real option when
 budget matters. Regenerate with `python -m eval.plot_cost_score`.
 
+### Cost-efficiency (profit per dollar)
+
+<p align="center">
+  <img src="assets/ebitda_per_dollar.png" alt="Horizontal bar chart of EBITDA margin points per dollar per episode. Qwen3.7 Plus 33.7 (orange, far longest), Claude Sonnet 4.6 13.5 (blue), Qwen3.7 Max 10.7 (orange), Claude Opus 4.6 2.8 (blue, shortest)." width="760">
+</p>
+
+Dividing profit by API spend makes the efficiency gap explicit. For third-party
+context, [Artificial Analysis](https://artificialanalysis.ai/) publishes a
+general **Intelligence Index** (higher = more capable):
+
+| Model | AA Intelligence Index | EBITDA % | Cost / episode | EBITDA per $ |
+|-------|----------------------:|---------:|---------------:|-------------:|
+| Claude Sonnet 4.6 | 47 | +3.41 | $0.253 | 13.5 |
+| **Qwen3.7 Max** | 46 | +3.11 | $0.290 | 10.7 |
+| Claude Opus 4.6 | 44 | +3.53 | $1.267 | 2.8 |
+| **Qwen3.7 Plus** | 39 | +1.61 | $0.048 | **33.7** |
+
+Two things stand out. **Qwen3.7 Max lands within a point of Sonnet 4.6 on both
+axes** — general intelligence (46 vs 47) *and* business performance (+3.11% vs
++3.41% EBITDA) — at comparable cost, i.e. our task independently corroborates
+its index-level standing. And on **profit-per-dollar, Qwen3.7 Plus is in a class
+of its own: 33.7 — 2.5× Sonnet and ~12× Opus.** If the goal is running the
+business profitably for the least spend, the Qwen models are the efficient
+frontier. (AA Intelligence Index values are third-party and shown for context;
+our EBITDA and cost come from the committed result JSONs. Regenerate the chart
+with `python -m eval.plot_efficiency`.)
+
 ---
 
 ## Quickstart
